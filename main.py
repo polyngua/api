@@ -26,6 +26,15 @@ class Conversation(BaseModel):
     with_who: str
 
 
+class Name(BaseModel):
+    name: str
+
+
+class Message(BaseModel):
+    content: str
+
+
+
 conversations: dict[str, Conversation] = {}
 gpt = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -53,20 +62,22 @@ async def get_conversation(id: str):
 
 
 @app.post("/conversations", response_model=Conversation)
-async def create_conversation(name: str):
+async def create_conversation(name: Name):
     """
     Create a conversation with a unique ID and the given name.
 
     :param name: The name of the conversation.
     :return: The newly created Conversation object.
     """
+    print("Creating a conversation with name", name.name)
+
     conversation_id = str(uuid4())
 
     # If this ever happens then it's a remarkable think. Odds are so low.
     while conversation_id in conversations:
         conversation_id = str(uuid4())
 
-    new_conversation = Conversation(id=conversation_id, messages=[], with_who=name)
+    new_conversation = Conversation(id=conversation_id, messages=[], with_who=name.name)
     conversations[conversation_id] = new_conversation
 
     return new_conversation
@@ -108,7 +119,7 @@ async def get_conversation_message(conversation_id: str, message_index: int):
 
 
 @app.post("/conversations/{conversation_id}/messages")
-async def create_conversation_message(conversation_id: str, message: str):
+async def create_conversation_message(conversation_id: str, message: Message):
     """
     Stores the given message in the conversation, submits the message to GPT, also stores the response in the
     conversation, and returns a response with the whole conversation history, as well as the individual message.
@@ -122,7 +133,7 @@ async def create_conversation_message(conversation_id: str, message: str):
 
     conversation: Conversation = conversations[conversation_id]
 
-    conversation.messages.append({"role": "user", "content": message})
+    conversation.messages.append({"role": "user", "content": message.content})
 
     response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
     gpt_message = response.choices[0].message.content
