@@ -67,6 +67,8 @@
     <input id="messageInput" placeholder="Type your message..."
            type="text"/>
     <button onclick="sendMessage()">Send</button>
+    <button onclick="startRecording()">Record</button>
+    <button onclick="stopRecording()">Stop</button>
 </div>
 </body>
 <script>
@@ -125,6 +127,39 @@
         messageDiv.classList.add('message', role);
         messageDiv.textContent = message;
         messagesDiv.appendChild(messageDiv);
+    }
+
+    var recorder;
+
+    function startRecording() {
+        navigator.mediaDevices.getUserMedia({audio: true})
+            .then(stream => {
+                recorder = new MediaRecorder(stream);
+
+                let audioChunks = [];
+
+                recorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+
+                recorder.addEventListener("stop", () => {
+                    let tracks = stream.getTracks();
+
+                    tracks.forEach(track => track.stop())
+
+                    const audioBlob = new Blob(audioChunks, {type: 'audio/wav'});
+                    // Do something with the audioBlob
+                });
+
+                recorder.start(1000);
+            });
+    }
+
+    // Function to stop recording
+    function stopRecording() {
+        if (recorder && recorder.state !== 'inactive') {
+            recorder.stop();
+        }
     }
 </script>
 </html>
