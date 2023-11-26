@@ -107,6 +107,4 @@ async function stopRecording() {
     if (recorder && recorder.state !== 'inactive') {
         recorder.stop();
     }
-
-    // console.log(output);
 }
