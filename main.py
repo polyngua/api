@@ -138,7 +138,7 @@ async def create_conversation_message(conversation_id: str, message: Message):
     response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
     gpt_message = response.choices[0].message.content
 
-    conversation.messsages.append({"role": "assistant", "content": gpt_message})
+    conversation.messages.append({"role": "assistant", "content": gpt_message})
 
     return {
         "conversation": conversation,
