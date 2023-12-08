@@ -1,6 +1,7 @@
+import io
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from pydantic import BaseModel
@@ -119,7 +120,7 @@ async def get_conversation_message(conversation_id: str, message_index: int):
 
 
 @app.post("/conversations/{conversation_id}/messages")
-async def create_conversation_message(conversation_id: str, message: Message):
+async def create_text_conversation_message(conversation_id: str, message: Message):
     """
     Stores the given message in the conversation, submits the message to GPT, also stores the response in the
     conversation, and returns a response with the whole conversation history, as well as the individual message.
@@ -145,6 +146,44 @@ async def create_conversation_message(conversation_id: str, message: Message):
         "reply": gpt_message
     }
 
+
+
+@app.post("/conversations/{conversation_id}/something")
+async def create_audio_conversation_message(conversation_id: str, recording: UploadFile):
+    print("We are in the correct handler")
+
+    if recording.content_type not in ["audio/wav", "audio/x-wav"]:
+        raise HTTPException(status_code=415, detail="Unsupported audio format. Please upload a WAV file.")
+
+    print("file validated")
+
+    if conversation_id not in conversations:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+
+    conversation: Conversation = conversations[conversation_id]
+
+    audio = await recording.read()
+
+    with open("file.wav", "wb") as file:
+        file.write(audio)
+
+    audio = open("file.wav", "rb")
+
+    transcript = gpt.audio.transcriptions.create(model="whisper-1", file=audio)
+
+    print("transcript:", transcript)
+
+    conversation.messages.append({"role": "user", "content": transcript.text})
+
+    response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
+    gpt_message = response.choices[0].message.content
+
+    conversation.messages.append({"role": "assistant", "content": gpt_message})
+
+    return {
+        "conversation": conversation,
+        "reply": gpt_message
+    }
 
 @app.get("/")
 async def root():
