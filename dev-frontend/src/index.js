@@ -87,19 +87,31 @@ function startRecording() {
                 tracks.forEach(track => track.stop())
 
                 const audioBlob = new Blob(audioChunks, {type: 'audio/wav'});
-                let url = URL.createObjectURL(audioBlob);
 
-                let downloadLink = document.createElement('a');
-                downloadLink.href = url;
-                downloadLink.download = "recording.wav";
-                downloadLink.text = "download";
-                downloadLink.innerText = "download";
+                // Create a FormData object to hold the audio file
+                let formData = new FormData();
+                formData.append('recording', audioBlob);
 
-                document.getElementById("download").appendChild(downloadLink);
+                console.log("now sending request");
+
+                // Use fetch to send the audio file to your server
+                fetch(`http://localhost:8000/conversations/${conversationId}/something`, {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success:', data);
+                        // Handle success - update UI or notify the user
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                        // Handle error - notify the user
+                    });
             });
 
             recorder.start(200);
-        });
+        }, );
 }
 
 // Function to stop recording
