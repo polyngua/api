@@ -1,6 +1,5 @@
-import io
+from io import BytesIO
 from uuid import uuid4
-
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
@@ -162,11 +161,8 @@ async def create_audio_conversation_message(conversation_id: str, recording: Upl
     conversation: Conversation = conversations[conversation_id]
 
     audio = await recording.read()
-
-    with open("file.wav", "wb") as file:
-        file.write(audio)
-
-    audio = open("file.wav", "rb")
+    audio = BytesIO(audio)
+    audio.name = "audio.wav"
 
     transcript = gpt.audio.transcriptions.create(model="whisper-1", file=audio)
 
