@@ -95,7 +95,7 @@ function startRecording() {
                 console.log("now sending request");
 
                 // Use fetch to send the audio file to your server
-                fetch(`http://localhost:8000/conversations/${conversationId}/something`, {
+                fetch(`http://localhost:8000/conversations/${conversationId}/messages/audio`, {
                     method: 'POST',
                     body: formData
                 })
