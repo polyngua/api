@@ -119,7 +119,7 @@ async def get_conversation_message(conversation_id: str, message_index: int):
     return conversation.messages[message_index]
 
 
-@app.post("/conversations/{conversation_id}/messages")
+@app.post("/conversations/{conversation_id}/messages/text")
 async def create_text_conversation_message(conversation_id: str, message: Message):
     """
     Stores the given message in the conversation, submits the message to GPT, also stores the response in the
@@ -147,8 +147,7 @@ async def create_text_conversation_message(conversation_id: str, message: Messag
     }
 
 
-
-@app.post("/conversations/{conversation_id}/something")
+@app.post("/conversations/{conversation_id}/messages/audio")
 async def create_audio_conversation_message(conversation_id: str, recording: UploadFile):
     print("We are in the correct handler")
 
