@@ -133,12 +133,7 @@ async def create_text_conversation_message(conversation_id: str, message: Messag
 
     conversation: Conversation = conversations[conversation_id]
 
-    conversation.messages.append({"role": "user", "content": message.content})
-
-    response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
-    gpt_message = response.choices[0].message.content
-
-    conversation.messages.append({"role": "assistant", "content": gpt_message})
+    gpt_message = get_gpt_reply(conversation, message)
 
     return {
         "conversation": conversation,
@@ -168,17 +163,28 @@ async def create_audio_conversation_message(conversation_id: str, recording: Upl
 
     print("transcript:", transcript)
 
-    conversation.messages.append({"role": "user", "content": transcript.text})
-
-    response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
-    gpt_message = response.choices[0].message.content
-
-    conversation.messages.append({"role": "assistant", "content": gpt_message})
+    gpt_message = await get_gpt_reply(conversation, transcript)
 
     return {
         "conversation": conversation,
         "reply": gpt_message
     }
+
+
+async def get_gpt_reply(conversation, user_message):
+    """
+    Adds the given message to the conversation and gets a response from GPT.
+
+    :param conversation: the conversation.
+    :param user_message: The message to get the reply for.
+    :return: the (textual) reply from GPT.
+    """
+    conversation.messages.append({"role": "user", "content": user_message.text})
+    response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
+    gpt_message = response.choices[0].message.content
+    conversation.messages.append({"role": "assistant", "content": gpt_message})
+    return gpt_message
+
 
 @app.get("/")
 async def root():
