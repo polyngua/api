@@ -30,7 +30,9 @@ class MessageOut(BaseModel):
 class MessageIn(BaseModel):
     content: str
 
+
 recordings: dict[str, BytesIO] = {}
+
 
 class Conversation(BaseModel):
     id: str
@@ -207,14 +209,14 @@ async def create_audio_conversation_message(conversation_id: str, recording: Upl
 
     message = get_gpt_reply(conversation, transcript)
 
-    audio = gpt.audio.speech.create(model="tts-1", voice="echo", input=message.content)
+    gpt_audio = gpt.audio.speech.create(model="tts-1", voice="echo", input=message.content)
 
     conversation.messages.append(message)
 
     audio_store = BytesIO()
     audio_store.name = message.id + "mp3"
 
-    for chunk in audio.iter_bytes(chunk_size=1024):
+    for chunk in gpt_audio.iter_bytes(chunk_size=1024):
         audio_store.write(chunk)
 
     audio_store.seek(0)
