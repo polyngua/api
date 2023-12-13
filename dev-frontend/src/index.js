@@ -82,7 +82,7 @@ function startRecording() {
                 console.log(text)
             });
 
-            recorder.addEventListener("stop", () => {
+            recorder.addEventListener("stop", async () => {
                 let tracks = stream.getTracks();
                 tracks.forEach(track => track.stop())
 
@@ -94,20 +94,50 @@ function startRecording() {
 
                 console.log("now sending request");
 
+                let messageID;
+                let messageContent;
+                let messageAudio;
+
                 // Use fetch to send the audio file to your server
-                fetch(`http://localhost:8000/conversations/${conversationId}/messages/audio`, {
+                await fetch(`http://localhost:8000/conversations/${conversationId}/messages/audio`, {
                     method: 'POST',
                     body: formData
                 })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Success:', data);
-                        // Handle success - update UI or notify the user
+                .then(async response => {
+                    response = await response.json();
+
+                    console.log("response from server after post to audio:");
+                    console.log(response)
+
+                    messageID = response.id;
+                    messageContent = response.content;
                     })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                        // Handle error - notify the user
-                    });
+                .catch((error) => {
+                    console.error('Error:', error);
+                    // Handle error - notify the user
+                });
+
+                console.log("Message ID: " + messageID);
+                console.log("Message content: " + messageContent);
+
+                await fetch(`http://localhost:8000/conversations/${conversationId}/messages/${messageID}/audio`, {
+                    method: 'GET'
+                })
+                .then(async response => {
+                    messageAudio = await response.blob();
+                })
+                    .catch(error => {
+                        console.log("There was a problem receiving the file.")
+                    })
+
+                // Create a URL for the blob
+                const audioUrl = URL.createObjectURL(messageAudio);
+
+                // Create an audio element and set its source to the blob URL
+                const audio = new Audio(audioUrl);
+
+                // Play the audio
+                audio.play();
             });
 
             recorder.start(200);
