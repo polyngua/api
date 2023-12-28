@@ -1,17 +1,17 @@
 import uuid
-from typing import Optional
+from entity import *
+from message import Message
 
-from Message import Message
 
-
-class Conversation:
-    def __init__(self, name: str, system_prompt: str):
+class Conversation(Entity):
+    def __init__(self, id: int, name: str, system_prompt: str):
         """
         A conversation containing messages between the user and the assistant
 
         :param name:
         """
-        self.user_name: name
+        super().__init__(id)
+        self.user_name: str = name
         self.identifier: str = str(uuid.uuid4())
         self.messages: dict[str, Message] = {}
         self.give_message(Message("system", system_prompt))
@@ -55,3 +55,7 @@ class Conversation:
         :return: the system prompt for this conversation.
         """
         return next(iter(self.messages.values()))  # Supposedly has a lower overhead than making a list. Makes sense.
+
+
+class ConversationRepository(EntityRepository, ABC):
+    pass
