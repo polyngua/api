@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "project-linuga-api"
+name = "polyngua-api"
 version = "0.1.0"
 description = ""
 authors = ["Connor Keevill <connor.keevill.19@gmail.com>"]
