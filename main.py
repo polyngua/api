@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
+from schemas import MessageIn, MessageOut, Name
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -19,16 +20,6 @@ app.add_middleware(
 
 # This is very temporary - just for quick movement with MVP.
 OPENAI_API_KEY = "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"
-
-
-class MessageOut(BaseModel):
-    id: str
-    role: str
-    content: str
-
-
-class MessageIn(BaseModel):
-    content: str
 
 
 recordings: dict[str, BytesIO] = {}
@@ -49,10 +40,6 @@ class Conversation(BaseModel):
         for message in self.messages:
             if message.id == message_id:
                 return message
-
-
-class Name(BaseModel):
-    name: str
 
 
 conversations: dict[str, Conversation] = {}
