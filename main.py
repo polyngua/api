@@ -46,16 +46,6 @@ conversations: dict[str, Conversation] = {}
 gpt = OpenAI(api_key=OPENAI_API_KEY)
 
 
-@app.get("/conversations")
-async def get_conversations() -> dict[str, Conversation]:
-    """
-    Get all conversations.
-
-    :return: A list of conversations.
-    """
-    return conversations
-
-
 @app.get("/conversations/{id}", response_model=Conversation)
 async def get_conversation(id: str):
     """
