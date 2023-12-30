@@ -3,7 +3,7 @@ from persistence.repositories.base_repository import SessionManagerRepository
 from persistence.repositories.memory_repository.data_store import DataStore
 
 
-class MemoryConversationRepository(SessionManagerRepository, ConversationRepository):
+class MemoryConversationRepository(ConversationRepository, SessionManagerRepository):
     def __init__(self, data_store: DataStore):
         self.data_store = data_store
 
