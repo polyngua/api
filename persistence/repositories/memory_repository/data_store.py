@@ -1,4 +1,4 @@
-from entities import Conversation
+from entities import Conversation, Message
 
 
 class DataStore:
@@ -11,5 +11,6 @@ class DataStore:
         if cls.instance is None:
             cls.instance = super(DataStore, cls).__new__(cls)
             cls.conversations: dict[int, Conversation] = {}
+            cls.messages: dict[int, Message] = {}
 
         return cls.instance
