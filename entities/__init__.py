@@ -1,3 +1,3 @@
-from entity import *
-from conversation import *
-from message import *
+from . entity import *
+from . conversation import *
+from . message import *

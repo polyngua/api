@@ -1,1 +1,1 @@
-from conversation_repository import MemoryConversationRepository
+from . conversation_repository import MemoryConversationRepository

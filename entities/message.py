@@ -2,7 +2,7 @@ from abc import ABC
 import uuid
 from io import BytesIO
 
-from entity import *
+from . entity import *
 
 
 class Message(Entity):

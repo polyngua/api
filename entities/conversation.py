@@ -1,6 +1,6 @@
 import uuid
-from entity import *
-from message import Message
+from . entity import *
+from . message import Message
 
 
 class Conversation(Entity):

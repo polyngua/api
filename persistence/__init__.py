@@ -1,1 +1,1 @@
-import repositories
+from . repositories import *

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from message import *
+from . message import *
 
 
 class ConversationBase(BaseModel):

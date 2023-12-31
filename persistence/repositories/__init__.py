@@ -1,2 +1,2 @@
-from base_repository import *
-from memory_repository import *
+from . base_repository import *
+from . memory_repository import *
