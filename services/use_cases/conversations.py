@@ -16,7 +16,7 @@ class CreateConversationUseCase:
         with self.repository as repo:
             conversation = repo.add(conversation)
 
-        conversation = ConversationOut.model_validate(conversation)  # No idea if this will work.
+        conversation = ConversationOut(**conversation.as_dict())
 
         return conversation
 
@@ -47,7 +47,7 @@ class SendTextMessageToConversationUseCase:
         self.conversation.give_message(assistant_response)
         self.conversation_repository.update(self.conversation)
 
-        return MessageOut.model_validate(assistant_response)  # Once again, not sure if this will work
+        return MessageOut(**assistant_response.as_dict())
 
 
 class SendAudioMessageToConversationUseCase:
