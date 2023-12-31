@@ -33,7 +33,7 @@ class SendTextMessageToConversationUseCase:
         self.message_repository = message_repository
         self.conversation = conversation
 
-    def execute(self, text: str):
+    def execute(self, text: str) -> MessageOut:
         # Message is created this way so that the returned message has an ID.
         message = self.message_repository.add(Message(None, "user", text, None))
 
