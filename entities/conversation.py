@@ -13,8 +13,8 @@ class Conversation(Entity):
         super().__init__(id)
         self.user_name: str = name
         self.identifier: str = str(uuid.uuid4())
-        self.messages: dict[str, Message] = {}
-        self.give_message(Message("system", system_prompt))
+        self.messages: dict[int, Message] = {}
+        self.give_message(Message(None, "system", system_prompt))
 
     def give_message(self, message: Message) -> None:
         """
@@ -22,7 +22,7 @@ class Conversation(Entity):
 
         :param message: the message to add to the conversation.
         """
-        self.messages[message.identifier] = message
+        self.messages[message.id] = message
 
     def message_exists(self, identifier: uuid):
         """
