@@ -23,7 +23,7 @@ class CreateConversationUseCase:
 
 class SendTextMessageToConversationUseCase:
     """
-    Sends a textual message to the conversation.
+    Sends a textual message to the conversation and returns a response from GPT.
     """
     def __init__(self,
                  conversation_repository: ConversationRepository,
