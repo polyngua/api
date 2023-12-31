@@ -1,8 +1,12 @@
-from entities import Conversation, ConversationRepository
-from services.data_transfer_objects import ConversationOut
+from entities import Conversation, ConversationRepository, Message, MessageRepository
+from services.data_transfer_objects import ConversationOut, MessageOut
+from services.use_cases.gpt_helper import get_gpt_reply
 
 
 class CreateConversationUseCase:
+    """
+    Create a new conversation and return to the user.
+    """
     def __init__(self, repository: ConversationRepository):
         self.repository = repository
 
@@ -15,3 +19,46 @@ class CreateConversationUseCase:
         conversation = ConversationOut.model_validate(conversation)  # No idea if this will work.
 
         return conversation
+
+
+class SendTextMessageToConversationUseCase:
+    """
+    Sends a textual message to the conversation.
+    """
+    def __init__(self,
+                 conversation_repository: ConversationRepository,
+                 message_repository: MessageRepository,
+                 conversation: Conversation):
+        self.conversation_repository = conversation_repository
+        self.message_repository = message_repository
+        self.conversation = conversation
+
+    def execute(self, text: str):
+        # Message is created this way so that the returned message has an ID.
+        message = self.message_repository.add(Message(None, "user", text, None))
+
+        # Add the message to the conversation
+        self.conversation.give_message(message)
+        self.conversation_repository.update(self.conversation)
+
+        assistant_response = get_gpt_reply(self.conversation)
+        assistant_response = self.message_repository.update(assistant_response)
+
+        self.conversation.give_message(assistant_response)
+        self.conversation_repository.update(self.conversation)
+
+        return MessageOut.model_validate(assistant_response)  # Once again, not sure if this will work
+
+
+class SendAudioMessageToConversationUseCase:
+    pass
+
+
+class GetTextMessageUseCase:
+    pass
+
+
+class GetAudioMessageUseCase:
+    pass
+
+
