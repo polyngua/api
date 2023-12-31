@@ -6,8 +6,8 @@ class MessageBase(BaseModel):
     content: str
 
 
-class MessageIn(MessageBase):
-    pass
+class MessageIn(BaseModel):
+    content: str
 
 
 class MessageOut(MessageBase):
