@@ -11,6 +11,12 @@ class Entity(ABC):
         """
         self.id: Optional[int] = id
 
+    def as_dict(self) -> dict:
+        """
+        Returns a dictionary of the object.
+        """
+        return self.__dict__
+
 
 class EntityRepository(ABC):
     @abstractmethod
