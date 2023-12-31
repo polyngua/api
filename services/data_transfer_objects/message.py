@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class MessageBase(BaseModel):
@@ -11,4 +12,4 @@ class MessageIn(BaseModel):
 
 
 class MessageOut(MessageBase):
-    id: str
+    id: Optional[int]
