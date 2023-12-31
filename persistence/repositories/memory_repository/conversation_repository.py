@@ -4,8 +4,8 @@ from persistence.repositories.memory_repository.data_store import DataStore
 
 
 class MemoryConversationRepository(ConversationRepository, SessionManagerRepository):
-    def __init__(self, data_store: DataStore):
-        self.data_store = data_store
+    def __init__(self):
+        self.data_store = DataStore()
 
     def get(self, conversation_id: int) -> Conversation:
         """
