@@ -42,7 +42,7 @@ class SendTextMessageToConversationUseCase:
         self.conversation_repository.update(self.conversation)
 
         assistant_response = get_gpt_reply(self.conversation)
-        assistant_response = self.message_repository.update(assistant_response)
+        assistant_response = self.message_repository.add(assistant_response)
 
         self.conversation.give_message(assistant_response)
         self.conversation_repository.update(self.conversation)
