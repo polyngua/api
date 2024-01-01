@@ -55,7 +55,14 @@ class SendAudioMessageToConversationUseCase:
 
 
 class GetTextMessageUseCase:
-    pass
+    def __init__(self, repository: MessageRepository):
+        self.repository = repository
+
+    def execute(self, id: int) -> MessageOut:
+        # TODO: This will need some authentication at some point. For now though we just assume that the user has
+        #  access. In particular we should check that the message is in a certain conversation and that users have
+        # access ot that very message / conversation.
+        return MessageOut(**self.repository.get(id).as_dict())
 
 
 class GetAudioMessageUseCase:
