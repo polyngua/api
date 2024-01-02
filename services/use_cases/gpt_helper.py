@@ -5,6 +5,7 @@ entities and tidied up, but I haven't decided on an interface for that yet.
 
 from openai import OpenAI
 from entities import Message, Conversation
+from io import BytesIO
 
 # This is very temporary - just for quick movement with MVP.
 OPENAI_API_KEY = "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"
@@ -47,3 +48,11 @@ def get_gpt_reply(conversation: Conversation) -> Message:
     gpt_message = response.choices[0].message.content
 
     return Message(None, "assistant", gpt_message)
+
+
+def transcribe_audio(audio: BytesIO) -> str:
+    return gpt.audio.transcriptions.create(model="whisper-1", file=audio)
+
+
+def text_to_speech(text: str) -> BytesIO:
+    return gpt.audio.speech.create(model="tts-1", voice="echo", input=text)
