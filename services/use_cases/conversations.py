@@ -95,6 +95,10 @@ class GetTextMessageUseCase:
 
 
 class GetAudioMessageUseCase:
-    pass
+    def __init__(self, repository: MessageRepository):
+        self.repository = repository
 
-
+    def execute(self, id: int) -> BytesIO:
+        # TODO: This will also need some authentication at some point. Again, for now we'll just assume that the user
+        #  has the perimissions needed.
+        return self.repository.get(id).audio
