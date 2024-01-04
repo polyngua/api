@@ -1,11 +1,15 @@
+import uvicorn
 from io import BytesIO
 from uuid import uuid4
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from openai import OpenAI
-from schemas import MessageIn, MessageOut, Name
-from pydantic import BaseModel
+from typing import Annotated
+from services.data_transfer_objects import MessageIn, ConversationOut, ConversationIn
+from services.use_cases import *
+from dependencies import *
+
+import persistence
 
 app = FastAPI()
 
@@ -18,212 +22,164 @@ app.add_middleware(
 )
 
 
-# This is very temporary - just for quick movement with MVP.
-OPENAI_API_KEY = "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"
-
-
-recordings: dict[str, BytesIO] = {}
-
-
-class Conversation(BaseModel):
-    id: str
-    messages: list[MessageOut]
-    with_who: str
-
-    def __contains__(self, item) -> bool:
-        return item in [message.id for message in self.messages]
-
-    def get_message(self, message_id):
-        if message_id not in self:
-            raise ValueError(f"Message with ID {message_id} does not exist.")
-
-        for message in self.messages:
-            if message.id == message_id:
-                return message
-
-
-conversations: dict[str, Conversation] = {}
-gpt = OpenAI(api_key=OPENAI_API_KEY)
-
-
-@app.get("/conversations/{id}", response_model=Conversation)
-async def get_conversation(id: str):
-    """
-    :param id: The unique identifier of the conversation.
-    :return: The conversation with the specified ID.
-    """
-    if id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found.")
-
-    return conversations[id]
-
-
-@app.post("/conversations", response_model=Conversation)
-async def create_conversation(name: Name):
+@app.post("/conversations")
+async def create_conversation(name: ConversationIn) -> ConversationOut:
     """
     Create a conversation with a unique ID and the given name.
 
     :param name: The name of the conversation.
     :return: The newly created Conversation object.
     """
-    print("Creating a conversation with name", name.name)
-
-    conversation_id = str(uuid4())
-
-    # If this ever happens then it's a remarkable think. Odds are so low.
-    while conversation_id in conversations:
-        conversation_id = str(uuid4())
-
-    new_conversation = Conversation(id=conversation_id, messages=[], with_who=name.name)
-    conversations[conversation_id] = new_conversation
-
-    return new_conversation
-
-
-@app.get("/conversations/{conversation_id}/messages", response_model=list)
-async def get_all_conversation_messages(conversation_id: str):
-    """
-    Retrieve a list of messages from a conversation.
-
-    :param conversation_id: The ID of the conversation.
-    :return: A list of messages in the conversation.
-    """
-    if conversation_id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found.")
-
-    return conversations[conversation_id].messages
+    return CreateConversationUseCase(persistence.repositories.MemoryConversationRepository()).execute(name.name)
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/text")
-async def get_text_conversation_message(conversation_id: str, message_id: str):
+async def get_text_conversation_message(conversation_id: int, message_id: int) -> MessageOut:
     """
-    Retrieves a specific message from a conversation.
+    Returns the text associated with the given message.
 
-    :param conversation_id: The ID of the conversation.
-    :param message_id: The ID of the message in the conversation.
-    :return: The requested message.
-    :raises HTTPException: If the conversation or message index is not found.
+    :param conversation_id: the conversation that the message is in. Note that this isn't used yet.
+    :param message_id: the message whose text to return.
+    :return: the text.
     """
-    if conversation_id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found.")
 
-    conversation = conversations[conversation_id]
+    # TODO: Note that this doesn't perform any verification that the message is in the conversation or (eventually) that
+    #  the user has access to see this message / conversation.
+    return GetTextMessageUseCase(persistence.MemoryMessageRepository()).execute(message_id)
 
-    if message_id not in conversation:
-        raise HTTPException(status_code=404, detail="Message not found")
-
-    return conversation.get_message(message_id)
+    # TODO: Keeping the below because of the error handling it supports. That will be needed eventually.
+    # """
+    # Retrieves a specific message from a conversation.
+    #
+    # :param conversation_id: The ID of the conversation.
+    # :param message_id: The ID of the message in the conversation.
+    # :return: The requested message.
+    # :raises HTTPException: If the conversation or message index is not found.
+    # """
+    # if conversation_id not in conversations:
+    #     raise HTTPException(status_code=404, detail="Conversation not found.")
+    #
+    # conversation = conversations[conversation_id]
+    #
+    # if message_id not in conversation:
+    #     raise HTTPException(status_code=404, detail="Message not found")
+    #
+    # return conversation.get_message(message_id)
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/audio")
-async def get_audio_conversation_message(conversation_id: str, message_id: str) -> StreamingResponse:
+async def get_audio_conversation_message(conversation_id: int, message_id: int) -> StreamingResponse:
     """
-    Retrieves the audio associated with a specific message from a conversation
+    Gets the audio for the given message.
 
-    :param conversation_id: the ID of the conversation of interest.
-    :param message_id: the ID of the message of interest.
-    :return: the audio of this message.
+    :param conversation_id: the conversation that the message is in. Note that this is not currently used for anything.
+    :param message_id: the id of the message whose audio we want to get.
+    :return: the audio as a streamed response.
     """
-    if conversation_id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found.")
+    audio = GetAudioMessageUseCase(persistence.MemoryMessageRepository()).execute(message_id)
+    audio.seek(0)
 
-    conversation = conversations[conversation_id]
+    return StreamingResponse(audio, media_type="audio/wav")
 
-    if message_id not in recordings:
-        raise HTTPException(status_code=404, detail="Message audio not found")
-
-    audio_bytes = recordings[message_id]
-    audio_bytes.seek(0)
-
-    return StreamingResponse(audio_bytes, media_type="audio/wav")
+    # TODO: Again, this is only being kept due to the error handling it contains
+    #
+    # """
+    # Retrieves the audio associated with a specific message from a conversation
+    #
+    # :param conversation_id: the ID of the conversation of interest.
+    # :param message_id: the ID of the message of interest.
+    # :return: the audio of this message.
+    # """
+    # if conversation_id not in conversations:
+    #     raise HTTPException(status_code=404, detail="Conversation not found.")
+    #
+    # conversation = conversations[conversation_id]
+    #
+    # if message_id not in recordings:
+    #     raise HTTPException(status_code=404, detail="Message audio not found")
+    #
+    # audio_bytes = recordings[message_id]
+    # audio_bytes.seek(0)
+    #
+    # return StreamingResponse(audio_bytes, media_type="audio/wav")
 
 
 @app.post("/conversations/{conversation_id}/messages/text")
-async def create_text_conversation_message(conversation_id: str, message: MessageIn) -> MessageOut:
+async def create_text_conversation_message(
+        conversation: Annotated[Conversation, Depends(GetConversationDependency(persistence.MemoryConversationRepository()).execute)],
+        message: MessageIn) -> MessageOut:
     """
-    Stores the given message in the conversation, submits the message to GPT, also stores the response in the
-    conversation, and returns a response with the whole conversation history, as well as the individual message.
+    Sends the given message to the given conversation and returns the response from GPT.
 
-    :param conversation_id: A string representing the ID of the conversation.
-    :param message: A string representing the message to be added to the conversation.
-    :return: A dictionary containing the conversation object and the generated reply message.
+    :param conversation: the conversation to add the message to.
+    :param message: the message being sent.
+    :return: the response from GPT.
     """
-    if conversation_id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found.")
-
-    conversation: Conversation = conversations[conversation_id]
-
-    userMessage = MessageOut(
-        id=str(uuid4()),
-        role="user",
-        content=message.content
-    )
-
-    gpt_message = get_gpt_reply(conversation, message)
-
-    conversation.messages.append(userMessage)
-    conversation.messages.append(gpt_message)
-
-    return gpt_message
-
+    return (SendTextMessageToConversationUseCase(
+        persistence.MemoryConversationRepository(),
+        persistence.MemoryMessageRepository(),
+        conversation)
+            .execute(message.content))
 
 @app.post("/conversations/{conversation_id}/messages/audio")
-async def create_audio_conversation_message(conversation_id: str, recording: UploadFile) -> MessageOut:
-    if recording.content_type not in ["audio/wav", "audio/x-wav"]:
-        raise HTTPException(status_code=415, detail="Unsupported audio format. Please upload a WAV file.")
+async def create_audio_conversation_message(
+        conversation: Annotated[Conversation, Depends(GetConversationDependency(persistence.MemoryConversationRepository()).execute)],
+        recording: UploadFile) -> MessageOut:
+    """
+    Sends the given (audio) message to the given conversation and returns the (textual) response from GPT.
 
-    if conversation_id not in conversations:
-        raise HTTPException(status_code=404, detail="Conversation not found.")
+    :param conversation: the conversation to send the message to.
+    :param recording: the audio recording of the message,
+    :return: the textual response of the message.
+    """
 
-    conversation: Conversation = conversations[conversation_id]
-
-    audio = await recording.read()
-    audio = BytesIO(audio)
+    audio = BytesIO(await recording.read())
     audio.name = "audio.wav"
 
-    transcript = gpt.audio.transcriptions.create(model="whisper-1", file=audio)
-    print("transcript:", transcript)
+    return SendAudioMessageToConversationUseCase(
+        persistence.MemoryConversationRepository(),
+        persistence.MemoryMessageRepository(),
+        conversation).execute(audio)
 
-    message = get_gpt_reply(conversation, transcript)
-
-    gpt_audio = gpt.audio.speech.create(model="tts-1", voice="echo", input=message.content)
-
-    conversation.messages.append(message)
-
-    audio_store = BytesIO()
-    audio_store.name = message.id + "mp3"
-
-    for chunk in gpt_audio.iter_bytes(chunk_size=1024):
-        audio_store.write(chunk)
-
-    audio_store.seek(0)
-    recordings[message.id] = audio_store
-
-    return message
-
-
-def get_gpt_reply(conversation, user_message) -> MessageOut:
-    """
-    Adds the given message to the conversation and gets a response from GPT.
-
-    :param conversation: the conversation.
-    :param user_message: The message to get the reply for.
-    :return: the (textual) reply from GPT.
-    """
-    conversation.messages.append({"role": "user", "content": user_message.text})
-    response = gpt.chat.completions.create(model="gpt-3.5-turbo", messages=conversation.messages)
-    gpt_message = response.choices[0].message.content
-    conversation.messages.append({"role": "assistant", "content": gpt_message})
-
-    gpt_message = MessageOut(
-        id=str(uuid4()),
-        role="assistant",
-        content=gpt_message
-    )
-
-    return gpt_message
+    # TODO: Once again this is being keps because it has error handling which needs to be implemented again in the use
+    #  case
+    # if recording.content_type not in ["audio/wav", "audio/x-wav"]:
+    #     raise HTTPException(status_code=415, detail="Unsupported audio format. Please upload a WAV file.")
+    #
+    # if conversation_id not in conversations:
+    #     raise HTTPException(status_code=404, detail="Conversation not found.")
+    #
+    # conversation: Conversation = conversations[conversation_id]
+    #
+    # audio = await recording.read()
+    # audio = BytesIO(audio)
+    # audio.name = "audio.wav"
+    #
+    # transcript = gpt.audio.transcriptions.create(model="whisper-1", file=audio)
+    # print("transcript:", transcript)
+    #
+    # message = get_gpt_reply(conversation, transcript)
+    #
+    # gpt_audio = gpt.audio.speech.create(model="tts-1", voice="echo", input=message.content)
+    #
+    # conversation.messages.append(message)
+    #
+    # audio_store = BytesIO()
+    # audio_store.name = message.id + "mp3"
+    #
+    # for chunk in gpt_audio.iter_bytes(chunk_size=1024):
+    #     audio_store.write(chunk)
+    #
+    # audio_store.seek(0)
+    # recordings[message.id] = audio_store
+    #
+    # return message
 
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8000)
