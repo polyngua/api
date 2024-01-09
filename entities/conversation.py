@@ -43,7 +43,7 @@ class Conversation(Entity):
 
         return self.messages[identifier]
 
-    def get_all_messages(self) -> dict[str, Message]:
+    def get_all_messages(self) -> dict[int, Message]:
         """
         :return: the messages which make up this conversion, barring the first one; that is not part of the conversation
         but rather the system prompt.
