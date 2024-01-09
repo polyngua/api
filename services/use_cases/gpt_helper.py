@@ -51,8 +51,16 @@ def get_gpt_reply(conversation: Conversation) -> Message:
 
 
 def transcribe_audio(audio: BytesIO) -> str:
-    return gpt.audio.transcriptions.create(model="whisper-1", file=audio)
+    return gpt.audio.transcriptions.create(model="whisper-1", file=audio).text
 
 
 def text_to_speech(text: str) -> BytesIO:
-    return gpt.audio.speech.create(model="tts-1", voice="echo", input=text)
+    gpt_audio = gpt.audio.speech.create(model="tts-1", voice="echo", input=text)
+
+    audio = BytesIO()
+    audio.name = "audio.wav"
+
+    for chunk in gpt_audio.iter_bytes(chunk_size=1024):
+        audio.write(chunk)
+
+    return audio
