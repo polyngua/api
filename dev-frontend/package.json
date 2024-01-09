@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "@xenova/transformers": "^2.9.0"
-  },
-  "devDependencies": {
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
-  }
-}
