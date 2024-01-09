@@ -48,7 +48,7 @@ class Conversation(Entity):
         :return: the messages which make up this conversion, barring the first one; that is not part of the conversation
         but rather the system prompt.
         """
-        return self.messages[1:]
+        return {k: v for i, (k, v) in enumerate(self.messages.items()) if i > 0}
 
     def get_system_prompt(self) -> Message:
         """
