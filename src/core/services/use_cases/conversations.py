@@ -1,6 +1,6 @@
-from core.entities import Conversation, ConversationRepository, Message, MessageRepository
+from src.core.entities import Conversation, ConversationRepository, Message, MessageRepository
 from core.services.data_transfer_objects import ConversationOut, MessageOut
-from core.services.use_cases.gpt_helper import get_gpt_reply, transcribe_audio, text_to_speech
+from src.core.services.use_cases import get_gpt_reply, transcribe_audio, text_to_speech
 from io import BytesIO
 
 

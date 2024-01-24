@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from core.entities import Message
-from core.entities import Conversation
+from src.core.entities import Message
+from src.core.entities import Conversation
 
 
 class MessageOut(BaseModel):

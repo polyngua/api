@@ -1,4 +1,4 @@
-from core.entities import Message
+from src.core.entities import Message
 from pydantic import Field, field_validator
 
 from . message import *

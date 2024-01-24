@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from typing import Annotated
 from core.services.data_transfer_objects import *
-from core.services.use_cases import *
+from src.core.services.use_cases import *
 from api.dependencies import *
 
 import persistence

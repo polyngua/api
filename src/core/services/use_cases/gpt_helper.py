@@ -4,7 +4,7 @@ entities and tidied up, but I haven't decided on an interface for that yet.
 """
 
 from openai import OpenAI
-from core.entities import Message, Conversation
+from src.core.entities import Message, Conversation
 from io import BytesIO
 
 # This is very temporary - just for quick movement with MVP.
