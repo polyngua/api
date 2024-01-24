@@ -1,13 +1,11 @@
 import uvicorn
-from io import BytesIO
-from uuid import uuid4
-from fastapi import FastAPI, HTTPException, UploadFile, Depends
+from fastapi import FastAPI, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from typing import Annotated
-from services.data_transfer_objects import MessageIn, ConversationOut, ConversationIn
-from services.use_cases import *
-from dependencies import *
+from core.services.data_transfer_objects import *
+from core.services.use_cases import *
+from api.dependencies import *
 
 import persistence
 

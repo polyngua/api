@@ -1,4 +1,4 @@
-from entities import ConversationRepository, Conversation, Entity
+from core.entities import ConversationRepository, Conversation
 from persistence.repositories.base_repository import SessionManagerRepository
 from persistence.repositories.memory_repository.data_store import DataStore
 

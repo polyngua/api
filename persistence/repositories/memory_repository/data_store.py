@@ -1,4 +1,4 @@
-from entities import Conversation, Message
+from core.entities import Conversation, Message
 
 
 class DataStore:

@@ -2,7 +2,7 @@
 Contains the interfaces / abstract base classes for the
 """
 from abc import ABC, abstractmethod
-from entities import Entity
+from core.entities import Entity
 
 
 class SessionManagerRepository(ABC):

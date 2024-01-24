@@ -2,7 +2,7 @@
 As the project develops, we should move some of this code into the core project, which these dependencies will depend upon.
 But this will do, for now.
 """
-from entities import Conversation, ConversationRepository
+from core.entities import Conversation, ConversationRepository
 
 
 class GetConversationDependency:

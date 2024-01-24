@@ -1,6 +1,5 @@
-from entities import Message
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from core.entities import Message
+from pydantic import Field, field_validator
 
 from . message import *
 
