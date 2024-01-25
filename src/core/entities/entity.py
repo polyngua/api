@@ -37,6 +37,6 @@ class EntityRepository[TEntity: Entity](ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def remove(self, entity: TEntity) -> TEntity:
+    def remove(self, id: UUID) -> TEntity:
         raise NotImplementedError
 
