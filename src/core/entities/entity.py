@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
 from typing import Optional
+from uuid import UUID, uuid4
 
 
 class Entity(ABC):
-    def __init__(self, id: int = None):
+    def __init__(self, id: UUID = None):
         """
         Every business entity will inherit from this class, and all will have some identifier.
 
         :param id: this entity's identifier. Defaults to None, for when creating a new instance.
         """
-        self.id: Optional[int] = id
+        self.id: Optional[UUID] = id
 
     def as_dict(self) -> dict:
         """
@@ -24,7 +25,7 @@ class EntityRepository[TEntity: Entity](ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, id: int) -> TEntity:
+    def get(self, id: UUID) -> TEntity:
         raise NotImplementedError
 
     @abstractmethod
