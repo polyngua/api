@@ -18,20 +18,20 @@ class Entity(ABC):
         return self.__dict__
 
 
-class EntityRepository(ABC):
+class EntityRepository[TEntity: Entity](ABC):
     @abstractmethod
-    def add(self, entity: Entity) -> Entity:
+    def add(self, entity: TEntity) -> TEntity:
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, id: int) -> Entity:
+    def get(self, id: int) -> TEntity:
         raise NotImplementedError
 
     @abstractmethod
-    def update(self, entity: Entity) -> Entity:
+    def update(self, entity: TEntity) -> TEntity:
         raise NotImplementedError
 
     @abstractmethod
-    def remove(self, entity: Entity) -> Entity:
+    def remove(self, entity: TEntity) -> TEntity:
         raise NotImplementedError
 
