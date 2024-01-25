@@ -1,5 +1,7 @@
 from src.core.entities import Conversation, Message
 
+from uuid import UUID
+
 
 class DataStore:
     """
@@ -10,7 +12,7 @@ class DataStore:
     def __new__(cls, *args, **kwargs):
         if cls.instance is None:
             cls.instance = super(DataStore, cls).__new__(cls)
-            cls.conversations: dict[int, Conversation] = {}
-            cls.messages: dict[int, Message] = {}
+            cls.conversations: dict[UUID, Conversation] = {}
+            cls.messages: dict[UUID, Message] = {}
 
         return cls.instance
