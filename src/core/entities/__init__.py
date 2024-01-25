@@ -1,3 +1,2 @@
 from . entity import *
-from . conversation import *
-from . message import *
+from . conversation_aggregate import *
