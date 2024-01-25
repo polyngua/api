@@ -5,7 +5,7 @@ from . entity import *
 
 
 class Message(Entity):
-    def __init__(self, id: Optional[int], role: str, content: str, audio: BytesIO = None) -> None:
+    def __init__(self, id: Optional[UUID], role: str, content: str, audio: BytesIO = None) -> None:
         super().__init__(id)
 
         self.role: str = role
@@ -14,7 +14,7 @@ class Message(Entity):
 
 
 class Conversation(Entity):
-    def __init__(self, id: int, name: str, system_prompt: str):
+    def __init__(self, id: Optional[UUID], name: str, system_prompt: str):
         """
         A conversation containing messages between the user and the assistant
 
@@ -22,8 +22,7 @@ class Conversation(Entity):
         """
         super().__init__(id)
         self.user_name: str = name
-        self.identifier: str = str(uuid.uuid4())
-        self.messages: dict[int, Message] = {}
+        self.messages: dict[UUID, Message] = {}
         self.give_message(Message(None, "system", system_prompt))
 
     def give_message(self, message: Message) -> None:
@@ -53,7 +52,7 @@ class Conversation(Entity):
 
         return self.messages[identifier]
 
-    def get_all_messages(self) -> dict[int, Message]:
+    def get_all_messages(self) -> dict[UUID, Message]:
         """
         :return: the messages which make up this conversion, barring the first one; that is not part of the conversation
         but rather the system prompt.
@@ -71,5 +70,5 @@ class ConversationAggregateRepository(EntityRepository[Conversation], ABC):
     def add_message_to_conversation(self, message: Message, conversation: Conversation) -> Conversation:
         raise NotImplementedError
 
-    def get_message_from_conversation(self, message_id: int, conversation: Conversation) -> Message:
+    def get_message_from_conversation(self, message_id: UUID, conversation: Conversation) -> Message:
         raise NotImplementedError
