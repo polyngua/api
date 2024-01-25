@@ -67,8 +67,10 @@ class Conversation(Entity):
 
 
 class ConversationAggregateRepository(EntityRepository[Conversation], ABC):
+    @abstractmethod
     def add_message_to_conversation(self, message: Message, conversation: Conversation) -> Conversation:
         raise NotImplementedError
 
+    @abstractmethod
     def get_message_from_conversation(self, message_id: UUID, conversation: Conversation) -> Message:
         raise NotImplementedError
