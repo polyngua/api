@@ -25,6 +25,10 @@ class EntityRepository[TEntity: Entity](ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def create(self, *args, **kwargs) -> TEntity:
+        raise NotImplementedError
+
+    @abstractmethod
     def get(self, id: UUID) -> TEntity:
         raise NotImplementedError
 
