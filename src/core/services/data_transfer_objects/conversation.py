@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from src.core.entities import Message
 from pydantic import Field, field_validator
 
@@ -5,7 +7,7 @@ from . message import *
 
 
 class ConversationBase(BaseModel):
-    id: int
+    id: UUID
     with_who: str = Field(validation_alias="user_name")
 
 
