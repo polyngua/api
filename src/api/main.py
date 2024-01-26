@@ -1,13 +1,10 @@
 import uvicorn
-from fastapi import FastAPI, UploadFile, Depends
+from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from typing import Annotated
-from core.services.data_transfer_objects import *
+from src.core.services.data_transfer_objects import *
 from src.core.services.use_cases import *
-from api.dependencies import *
-
-import persistence
+from src.persistence.repositories.memory_repository.conversation_aggregate_repository import MemoryConversationAggregateRepository
 
 app = FastAPI()
 
@@ -28,11 +25,11 @@ async def create_conversation(name: ConversationIn) -> ConversationOut:
     :param name: The name of the conversation.
     :return: The newly created Conversation object.
     """
-    return CreateConversationUseCase(persistence.repositories.MemoryConversationRepository()).execute(name.name)
+    return CreateConversationUseCase(MemoryConversationAggregateRepository()).execute(name.name)
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/text")
-async def get_text_conversation_message(conversation_id: int, message_id: int) -> MessageOut:
+async def get_text_conversation_message(conversation_id: UUID, message_id: UUID) -> MessageOut:
     """
     Returns the text associated with the given message.
 
@@ -43,7 +40,7 @@ async def get_text_conversation_message(conversation_id: int, message_id: int) -
 
     # TODO: Note that this doesn't perform any verification that the message is in the conversation or (eventually) that
     #  the user has access to see this message / conversation.
-    return GetTextMessageUseCase(persistence.MemoryMessageRepository()).execute(message_id)
+    return GetTextMessageUseCase(MemoryConversationAggregateRepository(), conversation_id).execute(message_id)
 
     # TODO: Keeping the below because of the error handling it supports. That will be needed eventually.
     # """
@@ -66,7 +63,7 @@ async def get_text_conversation_message(conversation_id: int, message_id: int) -
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/audio")
-async def get_audio_conversation_message(conversation_id: int, message_id: int) -> StreamingResponse:
+async def get_audio_conversation_message(conversation_id: UUID, message_id: UUID) -> StreamingResponse:
     """
     Gets the audio for the given message.
 
@@ -74,7 +71,7 @@ async def get_audio_conversation_message(conversation_id: int, message_id: int) 
     :param message_id: the id of the message whose audio we want to get.
     :return: the audio as a streamed response.
     """
-    audio = GetAudioMessageUseCase(persistence.MemoryMessageRepository()).execute(message_id)
+    audio = GetAudioMessageUseCase(MemoryConversationAggregateRepository(), conversation_id).execute(message_id)
     audio.seek(0)
 
     return StreamingResponse(audio, media_type="audio/wav")
@@ -103,41 +100,30 @@ async def get_audio_conversation_message(conversation_id: int, message_id: int) 
 
 
 @app.post("/conversations/{conversation_id}/messages/text")
-async def create_text_conversation_message(
-        conversation: Annotated[Conversation, Depends(GetConversationDependency(persistence.MemoryConversationRepository()).execute)],
-        message: MessageIn) -> MessageOut:
+async def create_text_conversation_message(conversation_id: UUID, message: MessageIn) -> MessageOut:
     """
     Sends the given message to the given conversation and returns the response from GPT.
 
-    :param conversation: the conversation to add the message to.
+    :param conversation_id: the conversation to add the message to.
     :param message: the message being sent.
     :return: the response from GPT.
     """
-    return (SendTextMessageToConversationUseCase(
-        persistence.MemoryConversationRepository(),
-        persistence.MemoryMessageRepository(),
-        conversation)
-            .execute(message.content))
+    return (SendTextMessageToConversationUseCase(MemoryConversationAggregateRepository(), conversation_id).execute(message.content))
+
 
 @app.post("/conversations/{conversation_id}/messages/audio")
-async def create_audio_conversation_message(
-        conversation: Annotated[Conversation, Depends(GetConversationDependency(persistence.MemoryConversationRepository()).execute)],
-        recording: UploadFile) -> MessageOut:
+async def create_audio_conversation_message(conversation_id: UUID, recording: UploadFile) -> MessageOut:
     """
     Sends the given (audio) message to the given conversation and returns the (textual) response from GPT.
 
-    :param conversation: the conversation to send the message to.
+    :param conversation_id: the conversation to send the message to.
     :param recording: the audio recording of the message,
     :return: the textual response of the message.
     """
-
     audio = BytesIO(await recording.read())
     audio.name = "audio.wav"
 
-    return SendAudioMessageToConversationUseCase(
-        persistence.MemoryConversationRepository(),
-        persistence.MemoryMessageRepository(),
-        conversation).execute(audio)
+    return SendAudioMessageToConversationUseCase(MemoryConversationAggregateRepository(), conversation_id).execute(audio)
 
     # TODO: Once again this is being keps because it has error handling which needs to be implemented again in the use
     #  case
