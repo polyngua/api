@@ -1,4 +1,6 @@
-from src.core.entities import Conversation, ConversationRepository, Message, MessageRepository
+from uuid import UUID
+
+from src.core.entities import Conversation, Message, ConversationAggregateRepository
 from src.core.services.data_transfer_objects import ConversationOut, MessageOut
 from src.core.services.use_cases.gpt_helper import get_gpt_reply, transcribe_audio, text_to_speech
 from io import BytesIO
@@ -8,14 +10,12 @@ class CreateConversationUseCase:
     """
     Create a new conversation and return to the user.
     """
-    def __init__(self, repository: ConversationRepository):
+    def __init__(self, repository: ConversationAggregateRepository):
         self.repository = repository
 
     def execute(self, name: str) -> ConversationOut:
-        conversation = Conversation(None, name, "You are an AI")
-
         with self.repository as repo:
-            conversation = repo.add(conversation)
+            conversation = repo.create(name, "You are an AI")
 
         conversation = ConversationOut(**conversation.as_dict())
 
@@ -27,38 +27,30 @@ class SendTextMessageToConversationUseCase:
     Sends a textual message to the conversation and returns a response from GPT.
     """
     def __init__(self,
-                 conversation_repository: ConversationRepository,
-                 message_repository: MessageRepository,
-                 conversation: Conversation):
-        self.conversation_repository = conversation_repository
-        self.message_repository = message_repository
-        self.conversation = conversation
+                 repository: ConversationAggregateRepository,
+                 conversation_id: UUID):
+        self.repository = repository
+        self.conversation_id = conversation_id
 
     def execute(self, text: str) -> MessageOut:
         # Message is created this way so that the returned message has an ID.
-        message = self.message_repository.add(Message(None, "user", text, None))
+        self.repository.create_message_in_conversation(Message(None, "user", text, None), self.conversation_id)
 
-        # Add the message to the conversation
-        self.conversation.give_message(message)
-        self.conversation_repository.update(self.conversation)
+        conversation = self.repository.get(self.conversation_id)
 
-        assistant_response = get_gpt_reply(self.conversation)
-        assistant_response = self.message_repository.add(assistant_response)
-
-        self.conversation.give_message(assistant_response)
-        self.conversation_repository.update(self.conversation)
+        assistant_response = self.repository.create_message_in_conversation(
+            get_gpt_reply(conversation),  # Note that this is the message created by GPT that we are adding here.
+            self.conversation_id)
 
         return MessageOut(**assistant_response.as_dict())
 
 
 class SendAudioMessageToConversationUseCase:
     def __init__(self,
-                 conversation_repository: ConversationRepository,
-                 message_repository: MessageRepository,
-                 conversation: Conversation):
-        self.conversation_repository = conversation_repository
-        self.message_repository = message_repository
-        self.conversation = conversation
+                 repository: ConversationAggregateRepository,
+                 conversation_id: UUID):
+        self.repository = repository
+        self.conversation_id = conversation_id
 
     def execute(self, audio: BytesIO) -> MessageOut:
         # TODO: eventually this will need to be made more performant; perhaps the audio can be streamed and transcribed
@@ -66,39 +58,38 @@ class SendAudioMessageToConversationUseCase:
         #  from GPT can be streamed in and TTS can happen on a per-sentence level, instead of waiting the whole time.
         #  and then even perhaps we can stream audio while GPT is still running or TTS is still running.
         transcription = transcribe_audio(audio)
-        user_message = Message(None, "user", transcription, audio)
-        user_message = self.message_repository.add(user_message)
 
-        self.conversation.give_message(user_message)
-        self.conversation_repository.update(self.conversation)
+        # Add the user's message to the conversation.
+        self.repository.create_message_in_conversation(Message(None, "user", transcription, audio), self.conversation_id)
+        conversation = self.repository.get(self.conversation_id)
 
-        assistant_response = get_gpt_reply(self.conversation)
+        # Get GPT's response, audio, and add to the conversation.
+        assistant_response = get_gpt_reply(conversation)
         assistant_audio = text_to_speech(assistant_response.content)
         assistant_response.audio = assistant_audio
-        assistant_response = self.message_repository.add(assistant_response)
-
-        self.conversation.give_message(assistant_response)
-        self.conversation_repository.update(self.conversation)
+        assistant_response = self.repository.create_message_in_conversation(assistant_response, self.conversation_id)
 
         return MessageOut(**assistant_response.as_dict())
 
 
 class GetTextMessageUseCase:
-    def __init__(self, repository: MessageRepository):
+    def __init__(self, repository: ConversationAggregateRepository, conversation_id: UUID):
         self.repository = repository
+        self.conversation_id = conversation_id
 
-    def execute(self, id: int) -> MessageOut:
+    def execute(self, message_id: UUID) -> MessageOut:
         # TODO: This will need some authentication at some point. For now though we just assume that the user has
         #  access. In particular we should check that the message is in a certain conversation and that users have
-        # access ot that very message / conversation.
-        return MessageOut(**self.repository.get(id).as_dict())
+        #  access ot that very message / conversation.
+        return MessageOut(**self.repository.get_message_from_conversation(message_id, self.conversation_id).as_dict())
 
 
 class GetAudioMessageUseCase:
-    def __init__(self, repository: MessageRepository):
+    def __init__(self, repository: ConversationAggregateRepository, conversation_id: UUID):
         self.repository = repository
+        self.conversation_id = conversation_id
 
-    def execute(self, id: int) -> BytesIO:
+    def execute(self, message_id: UUID) -> BytesIO:
         # TODO: This will also need some authentication at some point. Again, for now we'll just assume that the user
         #  has the perimissions needed.
-        return self.repository.get(id).audio
+        return self.repository.get_message_from_conversation(message_id, self.conversation_id).audio
