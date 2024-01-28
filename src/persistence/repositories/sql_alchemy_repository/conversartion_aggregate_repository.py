@@ -29,10 +29,10 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         return conversation
 
     def add(self, conversation: entities.Conversation) -> entities.Conversation:
-        new_conversation_row = models.Conversation(ID=conversation.id,
+        new_conversation_row = models.Conversation(ID=conversation.ID,
                                                    user_id=uuid.uuid4(),  # TODO: Note that user entity doesn't exist yet.
                                                    system_prompt=conversation.get_system_prompt().content,
-                                                   messages=self._messageEntitiesToModels(conversation.get_all_messages(), conversation.id))
+                                                   messages=self._messageEntitiesToModels(conversation.get_all_messages(), conversation.ID))
 
         self.session.add(new_conversation_row)
 
@@ -46,7 +46,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         return self.add(conversation)
 
     def update(self, conversation: entities.Conversation) -> entities.Conversation:
-        conversation_row = self._get_conversation_model(conversation.id)
+        conversation_row = self._get_conversation_model(conversation.ID)
 
         # Quite an ugly and large conditional but by checking the current values we hope to avoid overwriting what we
         # don't need to.
@@ -54,8 +54,8 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
             ...
         if conversation_row.system_prompt != conversation.get_system_prompt():
             conversation.system_prompt = conversation.system_prompt
-        if conversation_row.messages != self._messageEntitiesToModels(conversation.get_all_messages(), conversation.id):
-            conversation.messages = self._messageEntitiesToModels(conversation.get_all_messages(), conversation.id)
+        if conversation_row.messages != self._messageEntitiesToModels(conversation.get_all_messages(), conversation.ID):
+            conversation.messages = self._messageEntitiesToModels(conversation.get_all_messages(), conversation.ID)
 
         # Commit the changes to the database
         self.session.commit()
@@ -73,7 +73,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
 
     def create_message_in_conversation(self, message: entities.Message, conversation_id: UUID) -> entities.Message:
         ID = uuid.uuid4()
-        message.id = ID
+        message.ID = ID
 
         message_row = models.Message(ID=ID, conversation_id=conversation_id, role=message.role, content=message.content) # TODO: Handle audio.
 
@@ -122,7 +122,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         """
         A utility method that converts a Message entity into a Message model.
         """
-        return models.Message(ID=message.id, conversation_id=conversation_id, content=message.content, role=message.role)
+        return models.Message(ID=message.ID, conversation_id=conversation_id, content=message.content, role=message.role)
 
     def _messageEntitiesToModels(self,
                                 messages: dict[UUID, entities.Message],

@@ -17,11 +17,11 @@ class MemoryConversationAggregateRepository(ConversationAggregateRepository, Ses
     def __init__(self):
         self.data_store = DataStore()
 
-    def get(self, id: UUID) -> Conversation:
+    def get(self, ID: UUID) -> Conversation:
         """
         Returns the conversation with the given ID.
         """
-        return self.data_store.conversations.get(id)
+        return self.data_store.conversations.get(ID)
 
     def add(self, conversation: Conversation) -> Conversation:
         """
@@ -29,7 +29,7 @@ class MemoryConversationAggregateRepository(ConversationAggregateRepository, Ses
 
         Note: I'm not clear where this would be used yet.
         """
-        self.data_store.conversations[conversation.id] = conversation
+        self.data_store.conversations[conversation.ID] = conversation
 
         return conversation
 
@@ -48,24 +48,24 @@ class MemoryConversationAggregateRepository(ConversationAggregateRepository, Ses
         Updates the given conversation; the conversation is identified using the ID in the given conversation, but all
         other parameters are overwritten.
         """
-        self.data_store.conversations[conversation.id] = conversation
+        self.data_store.conversations[conversation.ID] = conversation
 
         return conversation
 
-    def remove(self, id: UUID) -> Conversation:
+    def remove(self, ID: UUID) -> Conversation:
         """
         Removes the conversation with the given ID and returns it.
         """
-        return self.data_store.conversations.pop(id)
+        return self.data_store.conversations.pop(ID)
 
     def create_message_in_conversation(self, message: Message, conversation_id: UUID) -> Message:
         """
         Adds the given message to the given conversation and return the conversation.
         """
-        message.id = uuid.uuid4()
+        message.ID = uuid.uuid4()
 
-        self.data_store.conversations[conversation_id].messages[message.id] = message
-        return self.data_store.conversations[conversation_id].messages[message.id]
+        self.data_store.conversations[conversation_id].messages[message.ID] = message
+        return self.data_store.conversations[conversation_id].messages[message.ID]
 
     def get_message_from_conversation(self, message_id: UUID, conversation_id: UUID) -> Message:
         """

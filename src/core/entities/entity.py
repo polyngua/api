@@ -4,13 +4,13 @@ from uuid import UUID, uuid4
 
 
 class Entity(ABC):
-    def __init__(self, id: UUID = None):
+    def __init__(self, ID: UUID = None):
         """
         Every business entity will inherit from this class, and all will have some identifier.
 
-        :param id: this entity's identifier. Defaults to None, for when creating a new instance.
+        :param ID: this entity's identifier. Defaults to None, for when creating a new instance.
         """
-        self.id: Optional[UUID] = id
+        self.ID: Optional[UUID] = ID
 
     def as_dict(self) -> dict:
         """
@@ -29,7 +29,7 @@ class EntityRepository[TEntity: Entity](ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, id: UUID) -> TEntity:
+    def get(self, ID: UUID) -> TEntity:
         raise NotImplementedError
 
     @abstractmethod
@@ -37,6 +37,6 @@ class EntityRepository[TEntity: Entity](ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def remove(self, id: UUID) -> TEntity:
+    def remove(self, ID: UUID) -> TEntity:
         raise NotImplementedError
 
