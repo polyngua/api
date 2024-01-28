@@ -1,8 +1,8 @@
 import uuid
 from uuid import UUID
 
-from sqlalchemy import create_engine, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship, sessionmaker, declarative_base
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, declarative_base
 
 Base = declarative_base()
 
