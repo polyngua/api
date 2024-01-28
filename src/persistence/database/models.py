@@ -1,8 +1,9 @@
 import uuid
+from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, declarative_base
+from sqlalchemy.orm import Mapped, mapped_column, declarative_base, relationship
 
 Base = declarative_base()
 
@@ -20,11 +21,15 @@ class User(Base):
         return f"{self.first_name} {self.surname}"
 
 
-
 class Conversation(Base):
     __tablename__ = "conversations"
 
     ID: Mapped[UUID] = mapped_column(primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey(User.ID))
+    system_prompt: Mapped[str] = mapped_column()
+    messages: Mapped[list["Message"]] = relationship()
+
+    user: Mapped[User] = relationship(User)
 
 
 class Message(Base):
@@ -34,4 +39,5 @@ class Message(Base):
     conversation_id: Mapped[UUID] = mapped_column(ForeignKey(Conversation.ID))
     role: Mapped[str] = mapped_column()  # TODO: This is revealing an implementation detail of the underlying OpenAI API
     content: Mapped[str] = mapped_column()
+    audio_filepath: Mapped[Optional[str]] = mapped_column()
 
