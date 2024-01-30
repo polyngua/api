@@ -29,6 +29,9 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         return conversation
 
     def add(self, conversation: entities.Conversation) -> entities.Conversation:
+        ID = uuid.uuid4()
+        conversation.ID = ID
+
         new_conversation_row = models.Conversation(ID=conversation.ID,
                                                    user_id=uuid.uuid4(),  # TODO: Note that user entity doesn't exist yet.
                                                    system_prompt=conversation.get_system_prompt().content,
@@ -39,9 +42,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         return conversation
 
     def create(self, name: str, system_prompt: str) -> entities.Conversation:
-        ID = uuid.uuid4()
-
-        conversation = entities.Conversation(ID, name, system_prompt)
+        conversation = entities.Conversation(None, name, system_prompt)
 
         return self.add(conversation)
 
@@ -125,8 +126,8 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         return models.Message(ID=message.ID, conversation_id=conversation_id, content=message.content, role=message.role)
 
     def _messageEntitiesToModels(self,
-                                messages: dict[UUID, entities.Message],
-                                conversation_id: UUID) -> list[models.Message]:
+                                 messages: dict[UUID, entities.Message],
+                                 conversation_id: UUID) -> list[models.Message]:
         """
         Utility method that converts a dictionary of Message entities into a list of Message models (so that they can be
         committed to the database, for example).
