@@ -21,7 +21,7 @@ class Entity(ABC):
 
 class EntityRepository[TEntity: Entity](ABC):
     @abstractmethod
-    def add(self, entity: TEntity) -> TEntity:
+    def add(self, entity: TEntity, *args, **kwargs) -> TEntity:
         raise NotImplementedError
 
     @abstractmethod
