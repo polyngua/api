@@ -40,4 +40,3 @@ class Message(Base):
     role: Mapped[str] = mapped_column()  # TODO: This is revealing an implementation detail of the underlying OpenAI API
     content: Mapped[str] = mapped_column()
     audio_filepath: Mapped[Optional[str]] = mapped_column()
-
