@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from src.core.entities import Conversation, Message, ConversationAggregateRepository
-from src.core.services.data_transfer_objects import ConversationOut, MessageOut
 from src.core.services.use_cases.gpt_helper import get_gpt_reply, transcribe_audio, text_to_speech
 from io import BytesIO
 
@@ -13,11 +12,9 @@ class CreateConversationUseCase:
     def __init__(self, repository: ConversationAggregateRepository):
         self.repository = repository
 
-    def execute(self, name: str) -> ConversationOut:
+    def execute(self, name: str) -> Conversation:
         with self.repository as repo:
             conversation = repo.create(name, "You are an AI")
-
-        conversation = ConversationOut(**conversation.as_dict())
 
         return conversation
 
@@ -32,7 +29,7 @@ class SendTextMessageToConversationUseCase:
         self.repository = repository
         self.conversation_id = conversation_id
 
-    def execute(self, text: str) -> MessageOut:
+    def execute(self, text: str) -> Message:
         # Message is created this way so that the returned message has an ID.
         self.repository.create_message_in_conversation(Message(None, "user", text, None), self.conversation_id)
 
@@ -42,7 +39,7 @@ class SendTextMessageToConversationUseCase:
             get_gpt_reply(conversation),  # Note that this is the message created by GPT that we are adding here.
             self.conversation_id)
 
-        return MessageOut(**assistant_response.as_dict())
+        return assistant_response
 
 
 class SendAudioMessageToConversationUseCase:
@@ -52,7 +49,7 @@ class SendAudioMessageToConversationUseCase:
         self.repository = repository
         self.conversation_id = conversation_id
 
-    def execute(self, audio: BytesIO) -> MessageOut:
+    def execute(self, audio: BytesIO) -> Message:
         # TODO: eventually this will need to be made more performant; perhaps the audio can be streamed and transcribed
         #  on the fly, as the user speaks, and then the GPT response can be generated earlier, and then the response
         #  from GPT can be streamed in and TTS can happen on a per-sentence level, instead of waiting the whole time.
@@ -69,7 +66,7 @@ class SendAudioMessageToConversationUseCase:
         assistant_response.audio = assistant_audio
         assistant_response = self.repository.create_message_in_conversation(assistant_response, self.conversation_id)
 
-        return MessageOut(**assistant_response.as_dict())
+        return assistant_response
 
 
 class GetTextMessageUseCase:
@@ -77,11 +74,11 @@ class GetTextMessageUseCase:
         self.repository = repository
         self.conversation_id = conversation_id
 
-    def execute(self, message_id: UUID) -> MessageOut:
+    def execute(self, message_id: UUID) -> Message:
         # TODO: This will need some authentication at some point. For now though we just assume that the user has
         #  access. In particular we should check that the message is in a certain conversation and that users have
         #  access ot that very message / conversation.
-        return MessageOut(**self.repository.get_message_from_conversation(message_id, self.conversation_id).as_dict())
+        return self.repository.get_message_from_conversation(message_id, self.conversation_id).as_dict()
 
 
 class GetAudioMessageUseCase:

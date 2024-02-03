@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.staticfiles import StaticFiles
 
-from src.core.services.data_transfer_objects import *
+from src.api.schemas import *
 from src.core.services.use_cases import *
 from src.persistence.repositories.memory_repository.conversation_aggregate_repository import MemoryConversationAggregateRepository
 from src.persistence.repositories.sql_alchemy_repository.conversartion_aggregate_repository import SqlAlchemyConversationAggregateRepository
@@ -44,7 +44,9 @@ async def create_conversation(name: ConversationIn) -> ConversationOut:
     :param name: The name of the conversation.
     :return: The newly created Conversation object.
     """
-    return CreateConversationUseCase(get_repository()).execute(name.name)
+    new_conversation = CreateConversationUseCase(get_repository()).execute(name.name)
+
+    return ConversationOut(**new_conversation.as_dict())
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/text")
@@ -56,10 +58,12 @@ async def get_text_conversation_message(conversation_id: UUID, message_id: UUID)
     :param message_id: the message whose text to return.
     :return: the text.
     """
-
     # TODO: Note that this doesn't perform any verification that the message is in the conversation or (eventually) that
     #  the user has access to see this message / conversation.
-    return GetTextMessageUseCase(get_repository(), conversation_id).execute(message_id)
+
+    text_message = GetTextMessageUseCase(get_repository(), conversation_id).execute(message_id)
+
+    return MessageOut(**text_message.as_dict())
 
     # TODO: Keeping the below because of the error handling it supports. That will be needed eventually.
     # """
@@ -119,15 +123,17 @@ async def get_audio_conversation_message(conversation_id: UUID, message_id: UUID
 
 
 @app.post("/conversations/{conversation_id}/messages/text")
-async def create_text_conversation_message(conversation_id: UUID, message: MessageIn) -> MessageOut:
+async def create_text_conversation_message(conversation_id: UUID, new_message: MessageIn) -> MessageOut:
     """
     Sends the given message to the given conversation and returns the response from GPT.
 
     :param conversation_id: the conversation to add the message to.
-    :param message: the message being sent.
+    :param new_message: the message being sent.
     :return: the response from GPT.
     """
-    return SendTextMessageToConversationUseCase(get_repository(), conversation_id).execute(message.content)
+    sent_message = SendTextMessageToConversationUseCase(get_repository(), conversation_id).execute(new_message.content)
+
+    return MessageOut(**sent_message.as_dict())
 
 
 @app.post("/conversations/{conversation_id}/messages/audio")
@@ -142,7 +148,9 @@ async def create_audio_conversation_message(conversation_id: UUID, recording: Up
     audio = BytesIO(await recording.read())
     audio.name = "audio.wav"
 
-    return SendAudioMessageToConversationUseCase(get_repository(), conversation_id).execute(audio)
+    text_response = SendAudioMessageToConversationUseCase(get_repository(), conversation_id).execute(audio)
+
+    return MessageOut(**text_response.as_dict())
 
     # TODO: Once again this is being keps because it has error handling which needs to be implemented again in the use
     #  case

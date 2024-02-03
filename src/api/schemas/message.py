@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 
 
 class MessageBase(BaseModel):
@@ -14,4 +14,4 @@ class MessageIn(BaseModel):
 
 
 class MessageOut(MessageBase):
-    id: Optional[UUID]
+    ID: Optional[UUID]
