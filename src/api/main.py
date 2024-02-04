@@ -8,8 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from src.api.schemas import *
 from src.core.entities.user import UserRepository
 from src.core.services.use_cases import *
-from src.persistence.repositories.memory_repository.conversation_aggregate_repository import MemoryConversationAggregateRepository
-from src.persistence.repositories.sql_alchemy_repository.conversartion_aggregate_repository import SqlAlchemyConversationAggregateRepository
+from src.persistence.repositories.memory_repository.conversation_aggregate_repository import \
+    MemoryConversationAggregateRepository
+from src.persistence.repositories.sql_alchemy_repository.conversartion_aggregate_repository import \
+    SqlAlchemyConversationAggregateRepository
 from src.persistence.database.models import Base
 from src.persistence.repositories.sql_alchemy_repository.user_repository import SqlAlchemyUserRepository
 
@@ -33,6 +35,7 @@ def get_conversation_aggregate_repository() -> ConversationAggregateRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyConversationAggregateRepository(session)
+
 
 def get_user_repository() -> UserRepository:
     session = Session(bind=engine)
@@ -135,7 +138,8 @@ async def create_text_conversation_message(conversation_id: UUID, new_message: M
     :param new_message: the message being sent.
     :return: the response from GPT.
     """
-    sent_message = SendTextMessageToConversationUseCase(get_conversation_aggregate_repository(), conversation_id).execute(new_message.content)
+    sent_message = SendTextMessageToConversationUseCase(get_conversation_aggregate_repository(),
+                                                        conversation_id).execute(new_message.content)
 
     return MessageOut(**sent_message.as_dict())
 
@@ -152,7 +156,8 @@ async def create_audio_conversation_message(conversation_id: UUID, recording: Up
     audio = BytesIO(await recording.read())
     audio.name = "audio.wav"
 
-    text_response = SendAudioMessageToConversationUseCase(get_conversation_aggregate_repository(), conversation_id).execute(audio)
+    text_response = SendAudioMessageToConversationUseCase(get_conversation_aggregate_repository(),
+                                                          conversation_id).execute(audio)
 
     return MessageOut(**text_response.as_dict())
 
@@ -211,4 +216,13 @@ async def root():
 
 
 if __name__ == "__main__":
+    # While testing we create an account (because there is no proper persistence yet).
+    CreateUserUseCase(get_user_repository()).execute(User(
+        None,
+        "connor@polyngua.com",
+        "Connor",
+        "Keevill"
+    ),
+        "password")
+
     uvicorn.run(app, host="127.0.0.1", port=8000)
