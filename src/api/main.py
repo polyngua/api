@@ -6,11 +6,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.api.schemas import *
+from src.core.entities.user import UserRepository
 from src.core.services.use_cases import *
 from src.persistence.repositories.memory_repository.conversation_aggregate_repository import MemoryConversationAggregateRepository
 from src.persistence.repositories.sql_alchemy_repository.conversartion_aggregate_repository import SqlAlchemyConversationAggregateRepository
 from src.persistence.database.models import Base
-
+from src.persistence.repositories.sql_alchemy_repository.user_repository import SqlAlchemyUserRepository
 
 app = FastAPI()
 
@@ -32,6 +33,11 @@ def get_conversation_aggregate_repository() -> ConversationAggregateRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyConversationAggregateRepository(session)
+
+def get_user_repository() -> UserRepository:
+    session = Session(bind=engine)
+
+    return SqlAlchemyUserRepository(session)
 
 
 @app.post("/conversations")
@@ -183,6 +189,19 @@ async def create_audio_conversation_message(conversation_id: UUID, recording: Up
     # recordings[message.id] = audio_store
     #
     # return message
+
+
+@app.post("/users")
+async def create_user(new_user: UserCreate) -> UserOut:
+    """
+    Creates a new user.
+    """
+    created_user = CreateUserUseCase(get_user_repository()).execute(new_user.email,
+                                                                    new_user.first_name,
+                                                                    new_user.surname,
+                                                                    new_user.password)
+
+    return UserOut(**user.to_dict())
 
 
 @app.get("/")
