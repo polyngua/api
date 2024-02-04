@@ -5,8 +5,8 @@ from . entity import *
 
 
 class Message(Entity):
-    def __init__(self, id: Optional[UUID], role: str, content: str, audio: BytesIO = None) -> None:
-        super().__init__(id)
+    def __init__(self, ID: Optional[UUID], role: str, content: str, audio: BytesIO = None) -> None:
+        super().__init__(ID)
 
         self.role: str = role
         self.content: str = content
@@ -14,13 +14,13 @@ class Message(Entity):
 
 
 class Conversation(Entity):
-    def __init__(self, id: Optional[UUID], name: str, system_prompt: str):
+    def __init__(self, ID: Optional[UUID], name: str, system_prompt: str):
         """
         A conversation containing messages between the user and the assistant
 
         :param name:
         """
-        super().__init__(id)
+        super().__init__(ID)
         self.user_name: str = name
         self.messages: dict[UUID, Message] = {}
         self.give_message(Message(None, "system", system_prompt))
@@ -31,7 +31,7 @@ class Conversation(Entity):
 
         :param message: the message to add to the conversation.
         """
-        self.messages[message.id] = message
+        self.messages[message.ID] = message
 
     def message_exists(self, identifier: uuid):
         """

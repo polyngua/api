@@ -7,7 +7,7 @@ from . message import *
 
 
 class ConversationBase(BaseModel):
-    id: UUID
+    ID: UUID
     with_who: str = Field(validation_alias="user_name")
 
 

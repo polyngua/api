@@ -3,16 +3,19 @@ This file is a temporary helpers file for now. A more permanent solution will se
 entities and tidied up, but I haven't decided on an interface for that yet.
 """
 
+import os
+# This is very temporary - just for quick movement with MVP.
+OPENAI_API_KEY = "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"
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+
 from openai import OpenAI
 from src.core.entities import Message, Conversation
 from io import BytesIO
 
-# This is very temporary - just for quick movement with MVP.
-OPENAI_API_KEY = "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"
 OPENAI_MODEL = "gpt-3.5-turbo"
 
 
-gpt = OpenAI(api_key=OPENAI_API_KEY)
+gpt = OpenAI()
 
 
 def message_to_dict(message: Message) -> dict[str, str]:
