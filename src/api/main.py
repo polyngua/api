@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from starlette.staticfiles import StaticFiles
 
 from src.api.schemas import *
 from src.core.services.use_cases import *
@@ -27,7 +26,6 @@ engine = create_engine("sqlite://")
 Session = sessionmaker(bind=engine)
 
 Base.metadata.create_all(bind=engine)
-# app.mount("/static", StaticFiles(directory=""))
 
 
 def get_repository() -> ConversationAggregateRepository:
