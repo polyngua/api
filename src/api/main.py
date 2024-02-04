@@ -28,7 +28,7 @@ Session = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 
-def get_repository() -> ConversationAggregateRepository:
+def get_conversation_aggregate_repository() -> ConversationAggregateRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyConversationAggregateRepository(session)
@@ -42,7 +42,7 @@ async def create_conversation(name: ConversationIn) -> ConversationOut:
     :param name: The name of the conversation.
     :return: The newly created Conversation object.
     """
-    new_conversation = CreateConversationUseCase(get_repository()).execute(name.name)
+    new_conversation = CreateConversationUseCase(get_conversation_aggregate_repository()).execute(name.name)
 
     return ConversationOut(**new_conversation.as_dict())
 
@@ -59,7 +59,7 @@ async def get_text_conversation_message(conversation_id: UUID, message_id: UUID)
     # TODO: Note that this doesn't perform any verification that the message is in the conversation or (eventually) that
     #  the user has access to see this message / conversation.
 
-    text_message = GetTextMessageUseCase(get_repository(), conversation_id).execute(message_id)
+    text_message = GetTextMessageUseCase(get_conversation_aggregate_repository(), conversation_id).execute(message_id)
 
     return MessageOut(**text_message.as_dict())
 
@@ -92,7 +92,7 @@ async def get_audio_conversation_message(conversation_id: UUID, message_id: UUID
     :param message_id: the id of the message whose audio we want to get.
     :return: the audio as a streamed response.
     """
-    audio = GetAudioMessageUseCase(get_repository(), conversation_id).execute(message_id)
+    audio = GetAudioMessageUseCase(get_conversation_aggregate_repository(), conversation_id).execute(message_id)
     audio.seek(0)
 
     return StreamingResponse(audio, media_type="audio/wav")
@@ -129,7 +129,7 @@ async def create_text_conversation_message(conversation_id: UUID, new_message: M
     :param new_message: the message being sent.
     :return: the response from GPT.
     """
-    sent_message = SendTextMessageToConversationUseCase(get_repository(), conversation_id).execute(new_message.content)
+    sent_message = SendTextMessageToConversationUseCase(get_conversation_aggregate_repository(), conversation_id).execute(new_message.content)
 
     return MessageOut(**sent_message.as_dict())
 
@@ -146,7 +146,7 @@ async def create_audio_conversation_message(conversation_id: UUID, recording: Up
     audio = BytesIO(await recording.read())
     audio.name = "audio.wav"
 
-    text_response = SendAudioMessageToConversationUseCase(get_repository(), conversation_id).execute(audio)
+    text_response = SendAudioMessageToConversationUseCase(get_conversation_aggregate_repository(), conversation_id).execute(audio)
 
     return MessageOut(**text_response.as_dict())
 
