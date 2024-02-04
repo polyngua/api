@@ -26,7 +26,8 @@ class SqlAlchemyUserRepository(UserRepository, SessionManagerRepository):
         user.ID = ID
 
         bites = password.encode()
-        hashed = bcrypt.hashpw(bites, "development_salt".encode()).decode()  # TODO: CHANGE THIS SALT
+        DEVELOPMENT_SALT = "$2b$12$/ymyFM04I4BnHbvuHu2GSu"
+        hashed = bcrypt.hashpw(bites, DEVELOPMENT_SALT.encode()).decode()  # TODO: CHANGE THIS SALT
 
         user_row = models.User(ID=user.ID, email=user.email, password=hashed, first_name=user.first_name, surname=user.surname)
         self.session.add(user_row)

@@ -196,12 +196,13 @@ async def create_user(new_user: UserCreate) -> UserOut:
     """
     Creates a new user.
     """
-    created_user = CreateUserUseCase(get_user_repository()).execute(new_user.email,
-                                                                    new_user.first_name,
-                                                                    new_user.surname,
-                                                                    new_user.password)
+    user_to_create = User(None, new_user.email,
+                          new_user.first_name,
+                          new_user.surname)
 
-    return UserOut(**user.to_dict())
+    created_user = CreateUserUseCase(get_user_repository()).execute(user_to_create, new_user.password)
+
+    return UserOut(**created_user.as_dict())
 
 
 @app.get("/")
