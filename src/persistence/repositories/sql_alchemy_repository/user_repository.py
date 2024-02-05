@@ -29,6 +29,7 @@ class SqlAlchemyUserRepository(UserRepository, SessionManagerRepository):
 
         user_row = models.User(ID=user.ID, email=user.email, password=hashed, first_name=user.first_name, surname=user.surname)
         self.session.add(user_row)
+        self.commit()
 
         return user
 
@@ -58,7 +59,7 @@ class SqlAlchemyUserRepository(UserRepository, SessionManagerRepository):
 
         return User(ID=user_row.ID, email=user_row.email, first_name=user_row.first_name, surname=user_row.surname)
 
-    def create(self, email: str, password: str, first_name: str, surname: str) -> User:
+    def create(self, email: str, first_name: str, surname: str, password: str) -> User:
 
         return self.add(User(None, email, first_name, surname), password)
 
