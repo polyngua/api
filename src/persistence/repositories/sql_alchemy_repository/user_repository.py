@@ -58,8 +58,6 @@ class SqlAlchemyUserRepository(UserRepository, SessionManagerRepository):
 
         return User(ID=user_row.ID, email=user_row.email, first_name=user_row.first_name, surname=user_row.surname)
 
-
-
     def create(self, email: str, password: str, first_name: str, surname: str) -> User:
 
         return self.add(User(None, email, first_name, surname), password)
@@ -77,7 +75,7 @@ class SqlAlchemyUserRepository(UserRepository, SessionManagerRepository):
 
     def remove(self, ID: UUID) -> User:
         user = self.get(ID)
-        user_row = self._get_user_model()
+        user_row = self._get_user_model(ID)
 
         self.session.delete(user_row)
         self.session.commit()
