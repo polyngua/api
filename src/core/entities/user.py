@@ -22,3 +22,11 @@ class UserRepository(EntityRepository, ABC):
         contain a field for a password; repositories will need to know about passwords.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def get_by_email_and_password(self, email: str, password: str) -> User:
+        """
+        This method sort of violates the whole "dependencies point inwards" thing, but I think *not* storing passwords
+        in a model is a good idea, so this is a practical violation.
+        """
+        raise NotImplementedError
