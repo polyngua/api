@@ -1,9 +1,14 @@
+from typing import Annotated
+
 import uvicorn
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import create_engine
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
+from starlette import status
 
 from src.api.schemas import *
 from src.core.entities.user import UserRepository
@@ -208,6 +213,21 @@ async def create_user(new_user: UserCreate) -> UserOut:
     created_user = CreateUserUseCase(get_user_repository()).execute(user_to_create, new_user.password)
 
     return UserOut(**created_user.as_dict())
+
+
+@app.post("/tokens")
+async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    email = login_data.username
+    password = login_data.password
+
+    try:
+        # Note that we don't save the output here because we don't *need* the user, we just want to check that they
+        # exist
+        GetUserUseCase(get_user_repository()).execute(email, password)
+    except NoResultFound as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
+
+    return {"access_token": email, "token_type": "bearer"}
 
 
 @app.get("/")
