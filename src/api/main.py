@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI, UploadFile, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy import create_engine
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
@@ -46,6 +46,14 @@ def get_user_repository() -> UserRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyUserRepository(session)
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+def get_current_user(token: Depends(oauth2_scheme)) -> User:
+    # While developing go for the mock function:
+    return get_user_repository().get_by_email_and_password("connor@polyngua.com", "password")
 
 
 @app.post("/conversations")
