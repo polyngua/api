@@ -33,12 +33,12 @@ class MemoryConversationAggregateRepository(ConversationAggregateRepository, Ses
 
         return conversation
 
-    def create(self, name: str, system_prompt: str) -> Conversation:
+    def create(self, system_prompt: str) -> Conversation:
         """
         Creates a new repository using the given parameters, adds it to the repo and return it.
         """
         id = uuid.uuid4()
-        conversation = Conversation(id, name, system_prompt)
+        conversation = Conversation(id, self.user, system_prompt)
         self.data_store.conversations[id] = conversation
 
         return conversation
