@@ -1,6 +1,7 @@
 import uuid
 from io import BytesIO
 
+from . import User, UserRepository
 from . entity import *
 
 
@@ -14,14 +15,14 @@ class Message(Entity):
 
 
 class Conversation(Entity):
-    def __init__(self, ID: Optional[UUID], name: str, system_prompt: str):
+    def __init__(self, ID: Optional[UUID], user: User, system_prompt: str):
         """
         A conversation containing messages between the user and the assistant
 
         :param name:
         """
         super().__init__(ID)
-        self.user_name: str = name
+        self.user = user
         self.messages: dict[UUID, Message] = {}
         self.give_message(Message(None, "system", system_prompt))
 
@@ -67,8 +68,11 @@ class Conversation(Entity):
 
 
 class ConversationAggregateRepository(EntityRepository[Conversation], ABC):
+    def __init__(self, user: User):
+        self.user = user
+
     @abstractmethod
-    def create(self, name: str, system_prompt: str) -> Conversation:
+    def create(self, system_prompt: str) -> Conversation:
         raise NotImplementedError
 
     @abstractmethod

@@ -1,6 +1,7 @@
 import uuid
 
 from src.core.entities.conversation_aggregate import ConversationAggregateRepository, Conversation, Message
+from src.core.entities import User
 from src.persistence.repositories import SessionManagerRepository
 from src.persistence.repositories.memory_repository.data_store import DataStore
 
@@ -14,7 +15,9 @@ from uuid import UUID
 
 
 class MemoryConversationAggregateRepository(ConversationAggregateRepository, SessionManagerRepository):
-    def __init__(self):
+    def __init__(self, user: User):
+        super().__init__(user)
+
         self.data_store = DataStore()
 
     def get(self, ID: UUID) -> Conversation:
@@ -33,12 +36,12 @@ class MemoryConversationAggregateRepository(ConversationAggregateRepository, Ses
 
         return conversation
 
-    def create(self, name: str, system_prompt: str) -> Conversation:
+    def create(self, system_prompt: str) -> Conversation:
         """
         Creates a new repository using the given parameters, adds it to the repo and return it.
         """
         id = uuid.uuid4()
-        conversation = Conversation(id, name, system_prompt)
+        conversation = Conversation(id, self.user, system_prompt)
         self.data_store.conversations[id] = conversation
 
         return conversation

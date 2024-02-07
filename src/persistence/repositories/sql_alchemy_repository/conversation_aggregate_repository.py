@@ -2,6 +2,7 @@ import uuid
 from uuid import UUID
 
 from src.core import entities
+from src.core.entities import User
 from src.persistence.database import models
 from src.persistence.repositories.base_repository import SessionManagerRepository
 from sqlalchemy.orm import Session
@@ -9,8 +10,8 @@ from sqlalchemy.exc import NoResultFound
 
 
 class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRepository, SessionManagerRepository):
-    def __init__(self, session: Session):
-        super().__init__()
+    def __init__(self, user: User, session: Session):
+        super().__init__(user)
 
         self.session = session
 
@@ -21,7 +22,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         conversation_row = self._get_conversation_model(ID)
 
         messages = [entities.Message(m.ID, m.role, m.content) for m in conversation_row.messages]
-        conversation = entities.Conversation(ID, conversation_row.user.first_name, conversation_row.system_prompt)
+        conversation = entities.Conversation(ID, self.user, conversation_row.system_prompt)
 
         for message in messages:
             conversation.give_message(message)
@@ -33,7 +34,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         conversation.ID = ID
 
         new_conversation_row = models.Conversation(ID=conversation.ID,
-                                                   user_id=uuid.uuid4(),  # TODO: Note that user entity doesn't exist yet.
+                                                   user_id=conversation.user.ID,  # TODO: Consider whether we need to check that user exists here.
                                                    system_prompt=conversation.get_system_prompt().content,
                                                    messages=self._messageEntitiesToModels(conversation.get_all_messages(), conversation.ID))
 
@@ -41,8 +42,8 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
 
         return conversation
 
-    def create(self, name: str, system_prompt: str) -> entities.Conversation:
-        conversation = entities.Conversation(None, name, system_prompt)
+    def create(self, system_prompt: str) -> entities.Conversation:
+        conversation = entities.Conversation(None, self.user, system_prompt)
 
         return self.add(conversation)
 
@@ -51,7 +52,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
 
         # Quite an ugly and large conditional but by checking the current values we hope to avoid overwriting what we
         # don't need to.
-        if conversation_row.user_id != uuid.uuid4():  # TODO: There isn't a user entity yet so the conversation entity can't reference it.
+        if conversation_row.user_id != conversation.user.ID:
             ...
         if conversation_row.system_prompt != conversation.get_system_prompt():
             conversation.system_prompt = conversation.system_prompt
@@ -112,7 +113,9 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
         :param ID: The ID of the Conversation to retrieve.
         :return: The Conversation model instance.
         """
-        conversation_row = self.session.query(models.Conversation).filter(models.Conversation.ID == ID).one_or_none()
+        conversation_row = (self.session.query(models.Conversation).filter(models.Conversation.ID == ID)
+                            .filter(models.Conversation.user_id == self.user.ID)
+                            .one_or_none())
 
         if conversation_row is None:
             raise NoResultFound(f"Conversation with ID {ID} not found")
