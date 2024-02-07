@@ -2,6 +2,7 @@ import uuid
 from uuid import UUID
 
 from src.core import entities
+from src.core.entities import User
 from src.persistence.database import models
 from src.persistence.repositories.base_repository import SessionManagerRepository
 from sqlalchemy.orm import Session
@@ -9,8 +10,8 @@ from sqlalchemy.exc import NoResultFound
 
 
 class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRepository, SessionManagerRepository):
-    def __init__(self, session: Session):
-        super().__init__()
+    def __init__(self, user: User, session: Session):
+        super().__init__(user)
 
         self.session = session
 
