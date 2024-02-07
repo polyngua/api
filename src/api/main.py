@@ -11,13 +11,10 @@ from sqlalchemy.orm import sessionmaker
 from starlette import status
 
 from src.api.schemas import *
-from src.core.entities.user import UserRepository
 from src.core.services.use_cases import *
-from src.persistence.repositories.memory_repository.conversation_aggregate_repository import \
-    MemoryConversationAggregateRepository
+from src.persistence.database.models import Base
 from src.persistence.repositories.sql_alchemy_repository.conversartion_aggregate_repository import \
     SqlAlchemyConversationAggregateRepository
-from src.persistence.database.models import Base
 from src.persistence.repositories.sql_alchemy_repository.user_repository import SqlAlchemyUserRepository
 
 app = FastAPI()
