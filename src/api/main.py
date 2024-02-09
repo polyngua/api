@@ -10,7 +10,6 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 from starlette import status
 
-from src.core.entities import *
 from src.api.schemas import *
 from src.core.services.use_cases import *
 from src.persistence.database.models import Base
