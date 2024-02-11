@@ -165,7 +165,7 @@ async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends(
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
-    return TokenOut(access_token=access_token, token_type="bearer")
+    return TokenOut(access_token=access_token.token, token_type="bearer")
 
 
 @app.get("/")
