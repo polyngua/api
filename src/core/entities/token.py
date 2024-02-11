@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
@@ -20,4 +20,6 @@ class Token(Entity):
 
 
 class TokenRepository(EntityRepository, ABC):
-    ...
+    @abstractmethod
+    def get_by_token_str(self, token: str) -> Token:
+        raise NotImplementedError
