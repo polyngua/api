@@ -21,5 +21,5 @@ class Token(Entity):
 
 class TokenRepository(EntityRepository, ABC):
     @abstractmethod
-    def get_by_token_str(self, token: str) -> Token:
+    def get_by_token_string(self, token: str) -> Token:
         raise NotImplementedError
