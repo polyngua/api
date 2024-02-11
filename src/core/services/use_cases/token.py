@@ -39,7 +39,7 @@ class ValidateTokenAndGetUserUseCase:
         """
         Decode the given token, perform database checks, and get the user if all is ok.
         """
-        payload = jwt.decode(token, SECRET, algorithm=ALGORITHM)  # We do it in this order, to avoid an unnecessary database call if we get JWTError
+        payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])  # We do it in this order, to avoid an unnecessary database call if we get JWTError
 
         token = self.token_repository.get_by_token_string(token)
 
