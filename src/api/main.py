@@ -15,6 +15,7 @@ from src.core.services.use_cases import *
 from src.persistence.database.models import Base
 from src.persistence.repositories.sql_alchemy_repository.conversation_aggregate_repository import \
     SqlAlchemyConversationAggregateRepository
+from src.persistence.repositories.sql_alchemy_repository.token_repository import SqlAlchemyTokenRepository
 from src.persistence.repositories.sql_alchemy_repository.user_repository import SqlAlchemyUserRepository
 
 app = FastAPI()
@@ -43,6 +44,12 @@ def get_user_repository() -> UserRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyUserRepository(session)
+
+
+def get_token_repository() -> TokenRepository:
+    session = Session(bind=engine)
+
+    return SqlAlchemyTokenRepository(session)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -148,18 +155,17 @@ async def create_user(new_user: UserCreate) -> UserOut:
 
 
 @app.post("/tokens")
-async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> TokenOut:
     email = login_data.username
     password = login_data.password
 
     try:
-        # Note that we don't save the output here because we don't *need* the user, we just want to check that they
-        # exist
-        GetUserUseCase(get_user_repository()).execute(email, password)
+        access_token = (AuthenticateUserAndCreateTokenUseCase(get_token_repository(), get_user_repository())
+                        .execute(email, password))
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
-    return {"access_token": email, "token_type": "bearer"}
+    return TokenOut(access_token=access_token, token_type="bearer")
 
 
 @app.get("/")
