@@ -81,7 +81,7 @@ class SqlAlchemyTokenRepository(TokenRepository):
 
         return Token(result.ID, result.token, result.expires, result.user_id)
 
-    def delete(self, ID: UUID) -> Token:
+    def remove(self, ID: UUID) -> Token:
         """
         Deletes the token with the given ID, raising an error if it does not exist.
         """
