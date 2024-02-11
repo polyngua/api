@@ -24,7 +24,7 @@ class AuthenticateUserAndCreateTokenUseCase:
         LIFESPAN_MINS = 60
 
         expiration = datetime.now(timezone.utc) + timedelta(minutes=LIFESPAN_MINS)
-        token_data = {"sub": user.ID, "exp": expiration}
+        token_data = {"sub": str(user.ID), "exp": expiration}
         token = jwt.encode(token_data, SECRET, algorithm=ALGORITHM)
 
         return self.token_repository.create(token, expiration, user.ID)
