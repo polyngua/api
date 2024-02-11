@@ -1,9 +1,6 @@
 from uuid import UUID
 
-from src.core.entities.user import User
-
 from pydantic import BaseModel
-from typing import Optional
 
 
 class UserBase(BaseModel):

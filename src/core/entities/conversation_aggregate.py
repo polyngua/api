@@ -1,7 +1,7 @@
 import uuid
 from io import BytesIO
 
-from . import User, UserRepository
+from . user import User, UserRepository
 from . entity import *
 
 
