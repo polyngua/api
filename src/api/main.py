@@ -48,7 +48,7 @@ def get_user_repository() -> UserRepository:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def get_current_user(token: Depends(oauth2_scheme)) -> User:
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     # While developing go for the mock function:
     return get_user_repository().get_by_email_and_password("connor@polyngua.com", "password")
 
