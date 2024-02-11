@@ -30,7 +30,7 @@ class SqlAlchemyTokenRepository(TokenRepository):
         token_row = models.Token(
             ID=ID,
             token=token.token,
-            expires=token.expires,
+            expires=token.expiration,
             user_id=token.user_id
         )
 
