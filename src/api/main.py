@@ -10,12 +10,13 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 from starlette import status
 
-from src.core.entities import *
 from src.api.schemas import *
+from src.api.schemas.token import TokenOut
 from src.core.services.use_cases import *
 from src.persistence.database.models import Base
 from src.persistence.repositories.sql_alchemy_repository.conversation_aggregate_repository import \
     SqlAlchemyConversationAggregateRepository
+from src.persistence.repositories.sql_alchemy_repository.token_repository import SqlAlchemyTokenRepository
 from src.persistence.repositories.sql_alchemy_repository.user_repository import SqlAlchemyUserRepository
 
 app = FastAPI()
@@ -46,12 +47,17 @@ def get_user_repository() -> UserRepository:
     return SqlAlchemyUserRepository(session)
 
 
+def get_token_repository() -> TokenRepository:
+    session = Session(bind=engine)
+
+    return SqlAlchemyTokenRepository(session)
+
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def get_current_user(token: Depends(oauth2_scheme)) -> User:
-    # While developing go for the mock function:
-    return get_user_repository().get_by_email_and_password("connor@polyngua.com", "password")
+def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+    return ValidateTokenAndGetUserUseCase(get_token_repository(), get_user_repository()).execute(access_token)
 
 
 @app.post("/conversations")
@@ -149,18 +155,25 @@ async def create_user(new_user: UserCreate) -> UserOut:
 
 
 @app.post("/tokens")
-async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> TokenOut:
     email = login_data.username
     password = login_data.password
 
     try:
-        # Note that we don't save the output here because we don't *need* the user, we just want to check that they
-        # exist
-        GetUserUseCase(get_user_repository()).execute(email, password)
+        access_token = (AuthenticateUserAndCreateTokenUseCase(SqlAlchemyTokenRepository(Session(bind=engine)), get_user_repository())
+                        .execute(email, password))
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
-    return {"access_token": email, "token_type": "bearer"}
+    return TokenOut(access_token=access_token.token, token_type="bearer")
+
+
+@app.get("/users/me")
+async def get_logged_in_user(current_user: Annotated[User, Depends(get_current_user)]) -> UserOut:
+    return UserOut(ID=current_user.ID,
+                   email=current_user.email,
+                   first_name=current_user.first_name,
+                   surname=current_user.surname)
 
 
 @app.get("/")
@@ -169,6 +182,7 @@ async def root():
 
 
 if __name__ == "__main__":
+
     # While testing we create an account (because there is no proper persistence yet).
     CreateUserUseCase(get_user_repository()).execute(User(
         None,
