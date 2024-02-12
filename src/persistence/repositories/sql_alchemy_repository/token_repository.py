@@ -71,7 +71,7 @@ class SqlAlchemyTokenRepository(TokenRepository):
 
     def get_by_token_string(self, token_string: str) -> Token:
         """
-        Returns the token object with the given toke, raising an error if it does not exist.
+        Returns the token object with the given token, raising an error if it does not exist.
         """
         stmt = select(models.Token).where(models.Token.token == token_string).limit(1)
         result = self.session.execute(stmt).scalars().one_or_none()
