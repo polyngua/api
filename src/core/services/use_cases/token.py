@@ -24,7 +24,8 @@ class AuthenticateUserAndCreateTokenUseCase:
         LIFESPAN_MINS = 60
 
         expiration = datetime.now(timezone.utc) + timedelta(minutes=LIFESPAN_MINS)
-        token_data = {"sub": str(user.ID), "exp": expiration}
+        ID_str = str(user.ID)  # jose can't convert UUID to JSON, so we have to convert to a string first
+        token_data = {"sub": ID_str, "exp": expiration}
         token = jwt.encode(token_data, SECRET, algorithm=ALGORITHM)
 
         return self.token_repository.create(token, expiration, user.ID)
@@ -46,9 +47,10 @@ class ValidateTokenAndGetUserUseCase:
         if token.has_expired():
             raise JWTError("Token has expired.")
 
-        user_id = payload.get("sub")
+        # Recall the above conversion from UUID -> str so that we could convert to json, now we do inverse.
+        user_id = UUID(payload.get("sub"))
 
-        if token.ID != user_id:
+        if token.user_id != user_id:
             raise JWTError("Invalid. Token has been tampered with")  # This should never occur if the cryptography has
                                                                      # worked. Very big problem if this happens
                                                                      # TODO: if this has happened we need to know.
