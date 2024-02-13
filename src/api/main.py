@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 import uvicorn
@@ -35,19 +36,13 @@ Session = sessionmaker(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 
-def get_conversation_aggregate_repository(transaction_user: User) -> ConversationAggregateRepository:
-    session = Session(bind=engine)
-
-    return SqlAlchemyConversationAggregateRepository(transaction_user, session)
-
-
-def get_user_repository() -> UserRepository:
+async def get_user_repository() -> UserRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyUserRepository(session)
 
 
-def get_token_repository() -> TokenRepository:
+async def get_token_repository() -> TokenRepository:
     session = Session(bind=engine)
 
     return SqlAlchemyTokenRepository(session)
@@ -56,76 +51,95 @@ def get_token_repository() -> TokenRepository:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)]) -> User:
-    return ValidateTokenAndGetUserUseCase(get_token_repository(), get_user_repository()).execute(access_token)
+async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)],
+                           token_repo: Annotated[TokenRepository, Depends(get_token_repository)],
+                           user_repo: Annotated[UserRepository, Depends(get_user_repository)]) -> User:
+    return ValidateTokenAndGetUserUseCase(token_repo, user_repo).execute(access_token)
+
+
+async def verify_user_and_get_conversation_aggregate_repository(transaction_user: Annotated[User, Depends(get_current_user)]) -> ConversationAggregateRepository:
+    session = Session(bind=engine)
+
+    return SqlAlchemyConversationAggregateRepository(transaction_user, session)
 
 
 @app.post("/conversations")
-async def create_conversation(current_user: Annotated[User, Depends(get_current_user)]) -> ConversationOut:
+async def create_conversation(current_user: Annotated[User, Depends(get_current_user)],
+                              repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> ConversationOut:
     """
     Create a conversation with a unique ID and the given name.
 
     :param current_user: The logged in user.
+    :param repo: The repository to give to the use case.
     :return: The newly created Conversation object.
     """
-    new_conversation = CreateConversationUseCase(get_conversation_aggregate_repository(current_user)).execute(current_user.first_name)
+    new_conversation = CreateConversationUseCase(repo).execute(current_user.first_name)
 
     return ConversationOut(**new_conversation.as_dict())
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/text")
-async def get_text_conversation_message(conversation_id: UUID, message_id: UUID, current_user: Annotated[User, Depends(get_current_user)]) -> MessageOut:
+async def get_text_conversation_message(conversation_id: UUID,
+                                        message_id: UUID,
+                                        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> MessageOut:
     """
     Returns the text associated with the given message.
 
     :param conversation_id: the conversation that the message is in. Note that this isn't used yet.
     :param message_id: the message whose text to return.
-    :param current_user: the logged in user.
+    :param repo: the repository for the use case. Note that this will verify the user.
     :return: the text.
     """
-    text_message = GetTextMessageUseCase(get_conversation_aggregate_repository(current_user), conversation_id).execute(message_id)
+    text_message = GetTextMessageUseCase(repo, conversation_id).execute(message_id)
 
     return MessageOut(**text_message.as_dict())
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/audio")
-async def get_audio_conversation_message(conversation_id: UUID, message_id: UUID, current_user: Annotated[User, Depends(get_current_user)]) -> StreamingResponse:
+async def get_audio_conversation_message(conversation_id: UUID,
+                                         message_id: UUID,
+                                         repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> StreamingResponse:
     """
     Gets the audio for the given message.
 
     :param conversation_id: the conversation that the message is in. Note that this is not currently used for anything.
     :param message_id: the id of the message whose audio we want to get.
-    :param current_user: the logged in user.
+    :param repo: the repository for the use case. Note that this dependency will also verify the user.
     :return: the audio as a streamed response.
     """
-    audio = GetAudioMessageUseCase(get_conversation_aggregate_repository(current_user), conversation_id).execute(message_id)
+    audio = GetAudioMessageUseCase(repo, conversation_id).execute(message_id)
     audio.seek(0)
 
     return StreamingResponse(audio, media_type="audio/wav")
 
 
 @app.post("/conversations/{conversation_id}/messages/text")
-async def create_text_conversation_message(conversation_id: UUID, new_message: MessageIn, current_user: Annotated[User, Depends(get_current_user)]) -> MessageOut:
+async def create_text_conversation_message(conversation_id: UUID,
+                                           new_message: MessageIn,
+                                           repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> MessageOut:
     """
     Sends the given message to the given conversation and returns the response from GPT.
 
     :param conversation_id: the conversation to add the message to.
     :param new_message: the message being sent.
+    :param repo: the repository for the use case. This also verifies the user.
     :return: the response from GPT.
     """
-    sent_message = SendTextMessageToConversationUseCase(get_conversation_aggregate_repository(current_user),
-                                                        conversation_id).execute(new_message.content)
+    sent_message = SendTextMessageToConversationUseCase(repo, conversation_id).execute(new_message.content)
 
     return MessageOut(**sent_message.as_dict())
 
 
 @app.post("/conversations/{conversation_id}/messages/audio")
-async def create_audio_conversation_message(conversation_id: UUID, recording: UploadFile, current_user: Annotated[User, Depends(get_current_user)]) -> MessageOut:
+async def create_audio_conversation_message(conversation_id: UUID,
+                                            recording: UploadFile,
+                                            repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> MessageOut:
     """
     Sends the given (audio) message to the given conversation and returns the (textual) response from GPT.
 
     :param conversation_id: the conversation to send the message to.
     :param recording: the audio recording of the message,
+    :param repo: the repository for the use case. This also verifies the user
     :return: the textual response of the message.
     """
     if recording.content_type not in ["audio/wav", "audio/x-wav"]:
@@ -134,14 +148,14 @@ async def create_audio_conversation_message(conversation_id: UUID, recording: Up
     audio = BytesIO(await recording.read())
     audio.name = "audio.wav"
 
-    text_response = SendAudioMessageToConversationUseCase(get_conversation_aggregate_repository(current_user),
-                                                          conversation_id).execute(audio)
+    text_response = SendAudioMessageToConversationUseCase(repo, conversation_id).execute(audio)
 
     return MessageOut(**text_response.as_dict())
 
 
 @app.post("/users")
-async def create_user(new_user: UserCreate) -> UserOut:
+async def create_user(new_user: UserCreate,
+                      repo: Annotated[UserRepository, Depends(get_user_repository)]) -> UserOut:
     """
     Creates a new user.
     """
@@ -149,18 +163,20 @@ async def create_user(new_user: UserCreate) -> UserOut:
                           new_user.first_name,
                           new_user.surname)
 
-    created_user = CreateUserUseCase(get_user_repository()).execute(user_to_create, new_user.password)
+    created_user = CreateUserUseCase(repo).execute(user_to_create, new_user.password)
 
     return UserOut(**created_user.as_dict())
 
 
 @app.post("/tokens")
-async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> TokenOut:
+async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+                       token_repository: Annotated[TokenRepository, Depends(get_token_repository)],
+                       user_repository: Annotated[UserRepository, Depends(get_user_repository)]) -> TokenOut:
     email = login_data.username
     password = login_data.password
 
     try:
-        access_token = (AuthenticateUserAndCreateTokenUseCase(SqlAlchemyTokenRepository(Session(bind=engine)), get_user_repository())
+        access_token = (AuthenticateUserAndCreateTokenUseCase(token_repository, user_repository)
                         .execute(email, password))
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
@@ -184,7 +200,7 @@ async def root():
 if __name__ == "__main__":
 
     # While testing we create an account (because there is no proper persistence yet).
-    CreateUserUseCase(get_user_repository()).execute(User(
+    CreateUserUseCase(asyncio.run(get_user_repository())).execute(User(
         None,
         "connor@polyngua.com",
         "Connor",
