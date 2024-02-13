@@ -39,6 +39,7 @@ class SqlAlchemyConversationAggregateRepository(entities.ConversationAggregateRe
                                                    messages=self._messageEntitiesToModels(conversation.get_all_messages(), conversation.ID))
 
         self.session.add(new_conversation_row)
+        self.session.commit()
 
         return conversation
 
