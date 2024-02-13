@@ -29,7 +29,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-engine = create_engine("sqlite://")
+engine = create_engine("sqlite:///dev.db")
 Session = sessionmaker(bind=engine)
 
 Base.metadata.create_all(bind=engine)
