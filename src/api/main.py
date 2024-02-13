@@ -29,7 +29,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-engine = create_engine("sqlite:///dev.db")
+engine = create_engine("sqlite://")
 Session = sessionmaker(bind=engine)
 
 Base.metadata.create_all(bind=engine)
@@ -56,7 +56,7 @@ def get_token_repository() -> TokenRepository:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     return ValidateTokenAndGetUserUseCase(get_token_repository(), get_user_repository()).execute(access_token)
 
 
