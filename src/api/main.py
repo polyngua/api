@@ -37,35 +37,53 @@ Base.metadata.create_all(bind=engine)
 
 
 async def get_user_repository() -> UserRepository:
+    """
+    Dependency for getting the user repository. This can be configured to change the type of repo injected.
+    """
     session = Session(bind=engine)
 
     return SqlAlchemyUserRepository(session)
 
 
 async def get_token_repository() -> TokenRepository:
+    """
+    Dependency for getting the token repository. This can be configured to change the type of repo injected.
+    """
     session = Session(bind=engine)
 
     return SqlAlchemyTokenRepository(session)
 
 
+# This allows the user to log in
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)],
                            token_repo: Annotated[TokenRepository, Depends(get_token_repository)],
                            user_repo: Annotated[UserRepository, Depends(get_user_repository)]) -> User:
+    """
+    Dependency for validating a token and returning an instance of the user the token belongs to (should all validation
+    checks pass).
+    """
     return ValidateTokenAndGetUserUseCase(token_repo, user_repo).execute(access_token)
 
 
-async def verify_user_and_get_conversation_aggregate_repository(transaction_user: Annotated[User, Depends(get_current_user)]) -> ConversationAggregateRepository:
+async def verify_user_and_get_conversation_aggregate_repository(transaction_user: Annotated[User, Depends(get_current_user)]
+                                                                ) -> ConversationAggregateRepository:
+    """
+    Dependency for getting the conversation aggregate root repository. Note that because these repos need a user, this
+    dependency also validates the user's token to provide to the repository.
+    """
     session = Session(bind=engine)
 
     return SqlAlchemyConversationAggregateRepository(transaction_user, session)
 
 
 @app.post("/conversations")
-async def create_conversation(current_user: Annotated[User, Depends(get_current_user)],
-                              repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> ConversationOut:
+async def create_conversation(
+        current_user: Annotated[User, Depends(get_current_user)],
+        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]
+) -> ConversationOut:
     """
     Create a conversation with a unique ID and the given name.
 
@@ -79,9 +97,11 @@ async def create_conversation(current_user: Annotated[User, Depends(get_current_
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/text")
-async def get_text_conversation_message(conversation_id: UUID,
-                                        message_id: UUID,
-                                        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> MessageOut:
+async def get_text_conversation_message(
+        conversation_id: UUID,
+        message_id: UUID,
+        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]
+) -> MessageOut:
     """
     Returns the text associated with the given message.
 
@@ -96,9 +116,11 @@ async def get_text_conversation_message(conversation_id: UUID,
 
 
 @app.get("/conversations/{conversation_id}/messages/{message_id}/audio")
-async def get_audio_conversation_message(conversation_id: UUID,
-                                         message_id: UUID,
-                                         repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> StreamingResponse:
+async def get_audio_conversation_message(
+        conversation_id: UUID,
+        message_id: UUID,
+        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]
+) -> StreamingResponse:
     """
     Gets the audio for the given message.
 
@@ -114,9 +136,11 @@ async def get_audio_conversation_message(conversation_id: UUID,
 
 
 @app.post("/conversations/{conversation_id}/messages/text")
-async def create_text_conversation_message(conversation_id: UUID,
-                                           new_message: MessageIn,
-                                           repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> MessageOut:
+async def create_text_conversation_message(
+        conversation_id: UUID,
+        new_message: MessageIn,
+        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]
+) -> MessageOut:
     """
     Sends the given message to the given conversation and returns the response from GPT.
 
@@ -131,9 +155,11 @@ async def create_text_conversation_message(conversation_id: UUID,
 
 
 @app.post("/conversations/{conversation_id}/messages/audio")
-async def create_audio_conversation_message(conversation_id: UUID,
-                                            recording: UploadFile,
-                                            repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]) -> MessageOut:
+async def create_audio_conversation_message(
+        conversation_id: UUID,
+        recording: UploadFile,
+        repo: Annotated[ConversationAggregateRepository, Depends(verify_user_and_get_conversation_aggregate_repository)]
+) -> MessageOut:
     """
     Sends the given (audio) message to the given conversation and returns the (textual) response from GPT.
 
@@ -172,6 +198,15 @@ async def create_user(new_user: UserCreate,
 async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                        token_repository: Annotated[TokenRepository, Depends(get_token_repository)],
                        user_repository: Annotated[UserRepository, Depends(get_user_repository)]) -> TokenOut:
+    """
+    Authenticates the given user details (extracted from form data using the OAuth2PasswordRequestForm) and creates a
+    new token for them.
+
+    :param login_data: the login data, as per the OAuth2 standard.
+    :param token_repository: the repo for accessing the tokens.
+    :param user_repository: the repo for accessing the users.
+    :return: the TokenOut response.
+    """
     email = login_data.username
     password = login_data.password
 
@@ -186,6 +221,12 @@ async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends(
 
 @app.get("/users/me")
 async def get_logged_in_user(current_user: Annotated[User, Depends(get_current_user)]) -> UserOut:
+    """
+    Returns info about user sending the request (i.e., authenticates their token and gets some basic account info.
+
+    :param current_user: the user sending the request, authenticated by the token.
+    :return: the UserOut response.
+    """
     return UserOut(ID=current_user.ID,
                    email=current_user.email,
                    first_name=current_user.first_name,
@@ -198,7 +239,6 @@ async def root():
 
 
 if __name__ == "__main__":
-
     # While testing we create an account (because there is no proper persistence yet).
     CreateUserUseCase(asyncio.run(get_user_repository())).execute(User(
         None,
