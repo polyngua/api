@@ -6,6 +6,9 @@ from . entity import *
 
 
 class Message(Entity):
+    """
+    A message in a conversation.
+    """
     def __init__(self, ID: Optional[UUID], role: str, content: str, audio: BytesIO = None) -> None:
         super().__init__(ID)
 
@@ -15,11 +18,16 @@ class Message(Entity):
 
 
 class Conversation(Entity):
+    """
+    A conversation made up of messages between a user and the langauge model.
+    """
     def __init__(self, ID: Optional[UUID], user: User, system_prompt: str):
         """
-        A conversation containing messages between the user and the assistant
+        Constructor for the class.
 
-        :param name:
+        :param ID: the conversation ID. Optional because this is defined by the repository.
+        :param user: the user in this conversation.
+        :param system_prompt: the system prompt being used in this conversation.
         """
         super().__init__(ID)
         self.user = user
@@ -68,7 +76,16 @@ class Conversation(Entity):
 
 
 class ConversationAggregateRepository(EntityRepository[Conversation], ABC):
+    """
+    The domain aggregate for a conversation. This consolidates access to both conversations and the messages contained
+    in them.
+    """
     def __init__(self, user: User):
+        """
+        Because conversations belong to users, this class must be instantiated with a user. This allows for user-level
+        permissions
+        :param user:
+        """
         self.user = user
 
     @abstractmethod
