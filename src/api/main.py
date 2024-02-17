@@ -233,11 +233,6 @@ async def get_logged_in_user(current_user: Annotated[User, Depends(get_current_u
                    surname=current_user.surname)
 
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
 if __name__ == "__main__":
     # While testing we create an account (because there is no proper persistence yet).
     CreateUserUseCase(asyncio.run(get_user_repository())).execute(User(
