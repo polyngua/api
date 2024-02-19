@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "polyngua-api"
+name = "src"
 version = "0.1.0"
 description = ""
 authors = ["Connor Keevill <connor.keevill.19@gmail.com>"]
