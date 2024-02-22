@@ -1,27 +1,11 @@
-from abc import ABC, abstractmethod
 from io import BytesIO
+from src.core.services.response_pipeline.transcription_model import TranscriptionModel
+from src.core.services.response_pipeline.language_model import LanguageModel
+from src.core.services.response_pipeline.tts_model import TTSModel
 
 import multimethod
 
 from src.core.entities import Conversation, Message
-
-
-class TranscriptionModel(ABC):
-    @abstractmethod
-    async def transcribe_audio(self, audio: BytesIO) -> str:
-        raise NotImplementedError
-
-
-class LanguageModel(ABC):
-    @abstractmethod
-    async def generate_message(self, conversation_history: list[Message]) -> str:
-        raise NotImplementedError
-
-
-class TTSModel(ABC):
-    @abstractmethod
-    async def synthesise_speech(self, text: str) -> BytesIO:
-        raise NotImplementedError
 
 
 class ResponsePipeline:
