@@ -19,6 +19,8 @@ class ResponsePipeline:
         self.language_model = language_model
         self.tts_model = tts_model
 
+        self.transcription = None
+
     @multimethod
     async def get_response(self, audio: BytesIO, include_audio: bool = True) -> Message:
         """
@@ -32,9 +34,9 @@ class ResponsePipeline:
         :param include_audio: boolean indicating whether the output message should include audio. Defaults to True.
         :return: the response message.
         """
-        transcription = await self.transcriber.transcribe_audio(audio)
+        self.transcription = await self.transcriber.transcribe_audio(audio)
 
-        return await self._get_response(include_audio, transcription)
+        return await self._get_response(self.transcription, include_audio)
 
     @multimethod
     async def get_response(self, text: str, include_audio: bool = True) -> Message:
@@ -57,9 +59,11 @@ class ResponsePipeline:
         """
         # Creating a message here to add to the conversation, to give to the language model.
         input_message = Message(None, "user", text)
-        langauge_model_response = await self.language_model.generate_message(
-            self.conversation.get_all_messages().append(input_message)
-        )
+
+        message_history = list(self.conversation.get_all_messages().values())
+        message_history.append(input_message)
+
+        langauge_model_response = await self.language_model.generate_message(message_history)
 
         if include_audio:
             audio = await self.tts_model.synthesise_speech(langauge_model_response)
