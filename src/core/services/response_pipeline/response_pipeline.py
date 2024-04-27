@@ -3,7 +3,7 @@ from src.core.services.response_pipeline.transcription_model import Transcriptio
 from src.core.services.response_pipeline.language_model import LanguageModel
 from src.core.services.response_pipeline.tts_model import TTSModel
 
-import multimethod
+from multimethod import multimethod
 
 from src.core.entities import Conversation, Message
 
