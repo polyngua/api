@@ -37,7 +37,7 @@ class ResponsePipeline:
         return await self._get_response(include_audio, transcription)
 
     @multimethod
-    async def get_response(self, text, include_audio: bool = True) -> Message:
+    async def get_response(self, text: str, include_audio: bool = True) -> Message:
         """
         Overload for the above method which takes text instead of audio, skipping the transcription step.
 
@@ -47,7 +47,7 @@ class ResponsePipeline:
         """
         return await self._get_response(include_audio, text)
 
-    async def _get_response(self, text, include_audio) -> Message:
+    async def _get_response(self, text: str, include_audio: bool) -> Message:
         """
         Private message which consolidates the shared pipeline stages for the two public methods.
 
