@@ -20,6 +20,14 @@ from src.persistence.repositories.sql_alchemy_repository.conversation_aggregate_
 from src.persistence.repositories.sql_alchemy_repository.token_repository import SqlAlchemyTokenRepository
 from src.persistence.repositories.sql_alchemy_repository.user_repository import SqlAlchemyUserRepository
 
+DEVELOPMENT = True
+DEVELOPMENT_USER_DETAILS = {
+    "email": "connor@polyngua.com",
+    "password": "password",
+    "first_name": "Connor",
+    "surname": "Keevill"
+}
+
 app = FastAPI()
 
 app.add_middleware(
@@ -57,6 +65,9 @@ async def get_token_repository() -> TokenRepository:
 # This allows the user to log in
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+if DEVELOPMENT:
+    oauth2_scheme = lambda: "token"
+
 
 async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)],
                            token_repo: Annotated[TokenRepository, Depends(get_token_repository)],
@@ -65,11 +76,16 @@ async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)],
     Dependency for validating a token and returning an instance of the user the token belongs to (should all validation
     checks pass).
     """
+    if DEVELOPMENT:
+        return GetUserUseCase(user_repo).execute(DEVELOPMENT_USER_DETAILS["email"],
+                                                      DEVELOPMENT_USER_DETAILS["password"])
+
     return ValidateTokenAndGetUserUseCase(token_repo, user_repo).execute(access_token)
 
 
-async def verify_user_and_get_conversation_aggregate_repository(transaction_user: Annotated[User, Depends(get_current_user)]
-                                                                ) -> ConversationAggregateRepository:
+async def verify_user_and_get_conversation_aggregate_repository(
+        transaction_user: Annotated[User, Depends(get_current_user)]
+        ) -> ConversationAggregateRepository:
     """
     Dependency for getting the conversation aggregate root repository. Note that because these repos need a user, this
     dependency also validates the user's token to provide to the repository.
@@ -234,13 +250,14 @@ async def get_logged_in_user(current_user: Annotated[User, Depends(get_current_u
 
 
 if __name__ == "__main__":
-    # While testing we create an account (because there is no proper persistence yet).
-    CreateUserUseCase(asyncio.run(get_user_repository())).execute(User(
-        None,
-        "connor@polyngua.com",
-        "Connor",
-        "Keevill"
-    ),
-        "password")
+    if DEVELOPMENT:
+        # While testing we create an account (because there is no proper persistence yet).
+        CreateUserUseCase(asyncio.run(get_user_repository())).execute(User(
+            None,
+            DEVELOPMENT_USER_DETAILS["email"],
+            DEVELOPMENT_USER_DETAILS["first_name"],
+            DEVELOPMENT_USER_DETAILS["surname"],
+        ),
+            DEVELOPMENT_USER_DETAILS["password"])
 
     uvicorn.run(app, host="127.0.0.1", port=8000)
