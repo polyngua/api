@@ -21,8 +21,10 @@ class AuthenticateUserAndCreateTokenUseCase:
         user = GetUserUseCase(self.user_repository).execute(email, password)  # This will authenticate the user.
 
         # Now create the token:
-        LIFESPAN_MINS = 60
+        LIFESPAN_MINS = 120
 
+        # TODO: This is very timezone dependent and will break in other timezones I think.
+        #  need to make sure that the timezone matches the timezone on both the creating and decoding ends.
         expiration = datetime.now(timezone.utc) + timedelta(minutes=LIFESPAN_MINS)
         ID_str = str(user.ID)  # jose can't convert UUID to JSON, so we have to convert to a string first
         token_data = {"sub": ID_str, "exp": expiration}
