@@ -83,7 +83,7 @@ async def get_current_user(access_token: Annotated[str, Depends(oauth2_scheme)],
     Dependency for validating a token and returning an instance of the user the token belongs to (should all validation
     checks pass).
     """
-    if DEVELOPMENT:
+    if not USE_AUTH:
         return GetUserUseCase(user_repo).execute(DEVELOPMENT_USER_DETAILS["email"],
                                                       DEVELOPMENT_USER_DETAILS["password"])
 
@@ -266,7 +266,6 @@ async def create_session(
 
     response.set_cookie("access_token", value=f"Bearer {access_token}", httponly=True)
     return HttpToken(success=True)
-
 
 
 @app.get("/users/me")
