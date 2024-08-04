@@ -2,7 +2,7 @@ import asyncio
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, UploadFile, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from starlette import status
 
 from src.api.schemas import *
+from src.api.auth.OAuth2CookieBased import OAuth2CookieBased
 from src.api.schemas.token import TokenOut
 from src.core.services.use_cases import *
 from src.persistence.database.models import Base
@@ -27,6 +28,9 @@ DEVELOPMENT_USER_DETAILS = {
     "first_name": "Connor",
     "surname": "Keevill"
 }
+
+USE_COOKIE_AUTH = True
+USE_AUTH = True
 
 app = FastAPI()
 
@@ -63,9 +67,12 @@ async def get_token_repository() -> TokenRepository:
 
 
 # This allows the user to log in
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="tokens")
 
-if DEVELOPMENT:
+if USE_COOKIE_AUTH:
+    oauth2_scheme = OAuth2CookieBased(tokenUrl="sessions")
+
+if not USE_AUTH:
     oauth2_scheme = lambda: "token"
 
 
@@ -233,6 +240,33 @@ async def create_token(login_data: Annotated[OAuth2PasswordRequestForm, Depends(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
     return TokenOut(access_token=access_token.token, token_type="bearer")
+
+
+@app.post("/sessions")
+async def create_session(
+        response: Response,
+        login_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+        token_repository: Annotated[TokenRepository, Depends(get_token_repository)],
+        user_repository: Annotated[UserRepository, Depends(get_user_repository)]
+) -> HttpToken:
+    """
+    Authenticates the given user details (extracted from form data using the OAuth2PasswordRequestForm) and sets the
+    HttpOnly cookie with the token value.
+
+    This is similar to the above create_token function, but relies on HttpOnly cookies for auth instead of bearer tokens.
+    """
+    email = login_data.username
+    password = login_data.password
+
+    try:
+        access_token = (AuthenticateUserAndCreateTokenUseCase(token_repository, user_repository)
+                        .execute(email, password))
+    except NoResultFound as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
+
+    response.set_cookie("access_token", value=f"Bearer {access_token}", httponly=True)
+    return HttpToken(success=True)
+
 
 
 @app.get("/users/me")
