@@ -264,7 +264,7 @@ async def create_session(
     except NoResultFound as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
-    response.set_cookie("access_token", value=f"Bearer {access_token}", httponly=True)
+    response.set_cookie("access_token", value=f"Bearer {access_token.token}", httponly=True)
     return HttpToken(success=True)
 
 
