@@ -6,5 +6,5 @@ class TokenOut(BaseModel):
     token_type: str
 
 
-class HttpToken(BaseModel):
+class CookieTokenResponse(BaseModel):
     success: bool

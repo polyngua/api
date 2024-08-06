@@ -248,7 +248,7 @@ async def create_session(
         login_data: Annotated[OAuth2PasswordRequestForm, Depends()],
         token_repository: Annotated[TokenRepository, Depends(get_token_repository)],
         user_repository: Annotated[UserRepository, Depends(get_user_repository)]
-) -> HttpToken:
+) -> CookieTokenResponse:
     """
     Authenticates the given user details (extracted from form data using the OAuth2PasswordRequestForm) and sets the
     HttpOnly cookie with the token value.
@@ -262,10 +262,10 @@ async def create_session(
         access_token = (AuthenticateUserAndCreateTokenUseCase(token_repository, user_repository)
                         .execute(email, password))
     except NoResultFound as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     response.set_cookie("access_token", value=f"Bearer {access_token.token}", httponly=True)
-    return HttpToken(success=True)
+    return CookieTokenResponse(success=True)
 
 
 @app.get("/users/me")
